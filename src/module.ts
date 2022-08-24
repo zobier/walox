@@ -7,6 +7,7 @@ import memory from './memory';
 import object from './object';
 import scanner from './scanner';
 import stack from './stack';
+import table from './table';
 import util from './util';
 import value from './value';
 import vm from './vm';
@@ -25,6 +26,7 @@ ${scanner}
 ${object}
 ${compiler}
 ${stack}
+${table}
 ${vm}
 ${main}
 `, 2)}

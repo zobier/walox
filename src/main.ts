@@ -13,6 +13,7 @@ export default `;;wasm
         (i32.const 4))))
   (call $init_chunk)
   (call $init_value_array)
+  (call $init_table)
   (call $interpret
     (local.get $srcptr)))
 `;
