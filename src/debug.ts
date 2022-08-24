@@ -19,6 +19,7 @@ export default `;;wasm
     (local.set $code
       (i32.load8_u
         (call $get_codeptr
+          (global.get $chunk)
           (local.get $i))))
     (call $logOpCode
       (local.get $code))
@@ -36,6 +37,7 @@ ${watSwitch(
         (call $get_value
           (i32.load8_u
             (call $get_codeptr
+              (global.get $chunk)
               (local.tee $i
                 (i32.add
                   (local.get $i)
@@ -49,6 +51,7 @@ ${watSwitch(
       (call $logNum
         (i32.load16_u
           (call $get_codeptr
+            (global.get $chunk)
             (i32.add
               (local.get $i)
               (i32.const 1)))))
@@ -66,6 +69,7 @@ ${watSwitch(
           (i32.const 0)
           (i32.load16_u
             (call $get_codeptr
+              (global.get $chunk)
               (i32.add
                 (local.get $i)
                 (i32.const 1))))))

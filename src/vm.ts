@@ -20,6 +20,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (i32.const 1)))
   (i32.load8_u
     (call $get_codeptr
+      (global.get $chunk)
       (global.get $ip))))
 (func $read_short
   (result i32)
@@ -32,6 +33,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (i32.const 2)))
   (i32.load16_u
     (call $get_codeptr
+      (global.get $chunk)
       (i32.add
         (local.get $cur)
         (i32.const 1)))))
@@ -51,6 +53,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (local.set $code
         (i32.load8_u
           (call $get_codeptr
+            (global.get $chunk)
             (global.get $ip))))
 ${indent(
   watSwitch(
