@@ -170,6 +170,13 @@ ${indent(
     `;;wasm
     (local.get $operator)`,
     [
+      [
+        TOKENS.TOKEN_LEFT_PAREN,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_CALL))
+        (br $break)`,
+      ],
       [TOKENS.TOKEN_PLUS, ''],
       [
         TOKENS.TOKEN_MINUS,

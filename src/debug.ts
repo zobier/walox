@@ -8,7 +8,6 @@ export default `;;wasm
   (local $chunkptr i32)
   (local $count i32)
   (local $i i32)
-  (local $code i32)
   (local.set $chunkptr
     (local.get $chunk))
   (local.set $count
@@ -17,17 +16,54 @@ export default `;;wasm
   (local.set $i
     (i32.const 0))
   (loop $loop
-    (local.set $code
-      (i32.load8_u
-        (call $get_codeptr
-          (local.get $chunk)
-          (local.get $i))))
-    (call $logOpCode
-      (local.get $code))
+    (local.set $i
+      (call $dissassemble_instruction
+        (local.get $chunk)
+        (local.get $i)))
+    (br_if $loop
+      (i32.lt_s
+        (local.tee $i
+          (i32.add
+            (local.get $i)
+            (i32.const 1)))
+        (local.get $count)))))
+(func $dissassemble_current
+  (param $frameptr i32)
+  (local $chunk i32)
+  (local $i i32)
+  (local.set $chunk
+    (call $get_chunk
+      (call $obj_val
+        (i32.load
+          (local.get $frameptr)))))
+  (local.set $i
+    (i32.sub
+      (call $get_ip
+        (local.get $frameptr))
+      (call $get_codeptr
+        (local.get $chunk)
+        (i32.const 0))))
+    (drop
+      (call $dissassemble_instruction
+        (local.get $chunk)
+        (local.get $i))))
+(func $dissassemble_instruction
+  (param $chunk i32)
+  (param $i i32)
+  (result i32)
+  (local $code i32)
+  (local.set $code
+    (i32.load8_u
+      (call $get_codeptr
+        (local.get $chunk)
+        (local.get $i))))
+  (call $logOpCode
+    (local.get $code))
 ${watSwitch(
   `;;wasm
   (local.get $code)`,
   [
+    [OP_CODES.OP_CALL, ''],
     [OP_CODES.OP_GET_LOCAL, ''],
     [
       OP_CODES.OP_SET_LOCAL,
@@ -96,11 +132,5 @@ ${watSwitch(
     ],
   ],
 )}
-    (br_if $loop
-      (i32.lt_s
-        (local.tee $i
-          (i32.add
-            (local.get $i)
-            (i32.const 1)))
-        (local.get $count)))))
+  (local.get $i))
 `;

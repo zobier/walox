@@ -118,6 +118,33 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (local.get $i)
         (i32.const 8)))
     (local.get $v)))
+(func $call_value
+  (param $callee f64)
+  (param $arg_count i32)
+  (result i32)
+  (if
+    (result i32)
+    (call $is_function
+      (local.get $callee)) ;; todo: runtime error if not fun or arg_count != arity
+    (then
+;;      (call $dissasemble
+;;        (call $get_chunk
+;;          (local.get $callee)))
+      (call $add_frame
+        (call $as_obj
+          (local.get $callee))
+        (call $get_codeptr
+          (call $get_chunk
+            (local.get $callee))
+          (i32.const 0))
+        (i32.sub
+          (i32.sub
+            (i32.load
+              (global.get $stack)) ;; *top_of_stack
+            (local.get $arg_count))
+          (i32.const 1))))
+    (else
+      (i32.const 0))))
 (func $interpret
   (param $srcptr i32)
   (result i32)
@@ -126,6 +153,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (local $code i32)
   (local $tmp f64)
   (local $offset i32)
+  (local $arg_count i32)
   (local $result i32)
   (global.set $call_frames
     (call $alloc
@@ -137,21 +165,13 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (call $push
     (local.get $function))
   (local.set $frame
-    (call $add_frame
-      (call $as_obj
-        (local.get $function))
-      (call $get_codeptr
-        (call $get_chunk
-          (local.get $function))
-        (i32.const 0))
-      (i32.add
-        (global.get $stack)
-        (i32.const 4))))
-;;  (call $dissasemble
-;;    (call $get_chunk
-;;      (local.get $function)))
+    (call $call_value
+      (local.get $function)
+      (i32.const 0)))
   (block $out
     (loop $run
+;;      (call $dissassemble_current
+;;        (local.get $frame))
       (local.set $code
         (i32.load8_u
           (call $get_ip
@@ -237,7 +257,8 @@ ${indent(
           (local.get $frame)
           (call $read_byte
             (local.get $frame))
-          (call $peek))
+          (call $peek
+            (i32.const 0)))
         (br $break)`,
       ],
       [
@@ -247,7 +268,8 @@ ${indent(
           (call $get_value
             (call $read_byte
               (local.get $frame)))
-          (call $peek))
+          (call $peek
+            (i32.const 0)))
         (br $break)`,
       ],
       [
@@ -339,7 +361,8 @@ ${indent(
             (call $is_string
               (local.get $tmp))
             (call $is_string
-              (call $peek)))
+              (call $peek
+                (i32.const 0))))
           (then
             (call $push
               (call $concatenate
@@ -425,7 +448,8 @@ ${indent(
         (if
           (i32.eqz
             (call $as_bool
-              (call $peek)))
+              (call $peek
+                (i32.const 0))))
           (then
             (call $set_ip
               (local.get $frame)
@@ -448,6 +472,19 @@ ${indent(
               (local.get $frame))
             (local.get $offset)))
         (br $break)`,
+      ],
+      [
+        OP_CODES.OP_CALL,
+        `;;wasm
+        (local.set $arg_count
+          (call $read_byte
+            (local.get $frame)))
+        (local.set $frame
+          (call $call_value
+            (call $peek
+              (local.get $arg_count))
+            (local.get $arg_count)))
+        (br $run)`,
       ],
       [
         OP_CODES.OP_RETURN,

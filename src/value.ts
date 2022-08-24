@@ -215,6 +215,18 @@ export default `;;wasm
         (call $get_len
           (local.get $ptr)))))
   (if
+    (call $is_function
+      (local.get $v))
+    (then
+      (if
+        (local.tee $ptr
+          (call $get_name
+            (local.get $v)))
+        (then
+          (call $print_value
+            (call $obj_val
+              (local.get $ptr)))))))
+  (if
     (call $is_number
       (local.get $v))
     (then
