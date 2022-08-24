@@ -90,6 +90,28 @@ ${enumToGlobals(TOKENS)}
     (i32.le_u
       (local.get $char)
       (i32.const ${charToHex('9')}))))
+(func $is_alpha
+  (param $char i32)
+  (result i32)
+  (i32.or
+    (i32.or
+      (i32.and
+        (i32.ge_u
+          (local.get $char)
+          (i32.const ${charToHex('a')}))
+        (i32.le_u
+          (local.get $char)
+          (i32.const ${charToHex('z')})))
+      (i32.and
+        (i32.ge_u
+          (local.get $char)
+          (i32.const ${charToHex('A')}))
+        (i32.le_u
+          (local.get $char)
+          (i32.const ${charToHex('Z')}))))
+    (i32.eq
+      (local.get $char)
+      (i32.const ${charToHex('_')}))))
 (func $scan_token
   (result i32)
   (local $this i32)
@@ -329,6 +351,38 @@ ${Object.entries({
         (local.set $result
           (global.get $TOKEN_NUMBER))
         (br $out)))
+    (if
+      (call $is_alpha
+        (local.get $char))
+      (then
+        (block $end_identifier
+          (loop $consume_identifier
+            (if
+              (i32.eq
+                (i32.add
+                  (local.get $current)
+                  (i32.const 1))
+                (local.get $end))
+              (then
+                (br $end_identifier)))
+            (local.set $current
+              (i32.add
+                (local.get $current)
+                (i32.const 1)))
+            (local.set $char
+              (i32.load8_u
+                (local.get $current)))
+            (if
+              (i32.or
+                (call $is_alpha
+                  (local.get $char))
+                (call $is_digit
+                  (local.get $char)))
+              (then
+                (br $consume_identifier)))))
+      (local.set $result
+        (global.get $TOKEN_IDENTIFIER))
+      (br $out)))
   ) ;; out
   (local.set $start
       (local.get $current))
