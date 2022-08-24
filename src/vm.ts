@@ -11,15 +11,12 @@ ${enumToGlobals(INTERPRET_RESULT)}
 (func $interpret
   (param $srcptr i32)
   (result i32)
-  (call $compile
-    (local.get $srcptr))
-  (global.get $INTERPRET_OK))
-(func $run
-  (result i32)
   (local $ip i32)
   (local $code i32)
   (local $tmp f64)
   (local $result i32)
+  (call $compile
+    (local.get $srcptr))
   (local.set $ip
     (i32.const 0))
   (call $init_stack)

@@ -57,6 +57,12 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   logToken(token: number) {
     console.log(TOKENS[token] || token);
   },
+  stringToDouble(ptr: number, len: number) { // todo: implement stdlib functions
+    const str = new TextDecoder().decode(
+      new Uint8Array(buffer, ptr, len)
+    );
+    return parseFloat(str);
+  },
 });
 
 export default `;;wasm
@@ -87,4 +93,8 @@ export default `;;wasm
 (import "util" "logToken"
   (func $logToken
     (param i32)))
+(import "util" "stringToDouble"
+  (func $stringToDouble
+    (param i32 i32)
+    (result f64)))
 `;

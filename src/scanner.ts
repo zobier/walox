@@ -32,6 +32,12 @@ ${enumToGlobals(TOKENS)}
 (global $scanner
   (mut i32)
   (i32.const 0))
+(global $start ;; workaround for multiple return values (struct { TokenType, start, len })
+  (mut i32)
+  (i32.const 0))
+(global $len
+  (mut i32)
+  (i32.const 0))
 (func $init_scanner
   (param $srcptr i32)
   (local $this i32)
@@ -461,16 +467,12 @@ ${indent(cases, 4)}))` : cases;
     (i32.add
       (local.get $current)
       (i32.const 1)))
-  (;if
-    (i32.ne
-      (local.get $result)
-      (global.get $TOKEN_EOF))
-    (then
-      (call $logString
-        (local.get $start)
-        (i32.sub
-          (local.get $current)
-          (local.get $start))));)
+  (global.set $start
+    (local.get $start))
+  (global.set $len
+    (i32.sub
+      (local.get $current)
+      (local.get $start)))
   (i32.store
     (i32.add
       (local.get $this)
