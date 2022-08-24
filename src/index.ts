@@ -25,6 +25,7 @@ wabt().then(async (wabt) => {
 ( ) { } ; , . - + / * "foo" // foo
 ! = < > != == <= >= 123.456
 an andy and class else if nil or print return var while
+f false for fun funny this true
 // baz`);
   const len = new Uint32Array([source.length]);
   memArray.set(len)

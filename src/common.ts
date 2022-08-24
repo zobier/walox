@@ -11,3 +11,5 @@ export const charToHex = (c: string) => {
   return '0x' + code.toString(16) +
     (code >= 32 ? ` (; '${c}' ;)` : '');
 };
+
+export const indent = (s: string, n: number) => s.replace(/^/mg, ' '.repeat(n));

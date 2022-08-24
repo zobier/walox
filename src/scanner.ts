@@ -1,4 +1,4 @@
-import { charToHex, enumToGlobals } from './common';
+import { charToHex, enumToGlobals, indent } from './common';
 
 export enum TOKENS {
   // Single-character tokens.
@@ -375,48 +375,84 @@ ${Object.entries({
                   (local.get $char)))
               (then
                 (br $consume_identifier)))))
-      (local.set $len
-        (i32.sub
-          (local.get $current)
-          (local.get $start)))
+        (local.set $len
+          (i32.sub
+            (local.get $current)
+            (local.get $start)))
 ${Object.entries({
-  'and': '$TOKEN_AND',
-  'class': '$TOKEN_CLASS',
-  'else': '$TOKEN_ELSE',
-  'if': '$TOKEN_IF',
-  'nil': '$TOKEN_NIL',
-  'or': '$TOKEN_OR',
-  'print': '$TOKEN_PRINT',
-  'return': '$TOKEN_RETURN',
-  'var': '$TOKEN_VAR',
-  'while': '$TOKEN_WHILE',
-}).map(([keyword, token]) => `;;wasm
-      (block $check_${keyword}
+  '': {
+    'and': '$TOKEN_AND',
+    'class': '$TOKEN_CLASS',
+    'else': '$TOKEN_ELSE',
+    'if': '$TOKEN_IF',
+    'nil': '$TOKEN_NIL',
+    'or': '$TOKEN_OR',
+    'print': '$TOKEN_PRINT',
+    'return': '$TOKEN_RETURN',
+    'var': '$TOKEN_VAR',
+    'while': '$TOKEN_WHILE',
+  },
+  'f': {
+    'alse': '$TOKEN_FALSE',
+    'or': '$TOKEN_FOR',
+    'un': '$TOKEN_FUN',
+  },
+  't': {
+    'his': '$TOKEN_THIS',
+    'rue': '$TOKEN_TRUE',
+  },
+}).map(([prefix, alternatives]) => {
+  const start = prefix ? `;;wasm
+                  (i32.add
+                    (local.get $start)
+                    (i32.const 1))` : `;;wasm
+                  (local.get $start)`;
+  const offset = prefix ? 2 : 1;
+  const cases = Object.entries(alternatives)
+    .map(([rest, token]) => {
+      const keyword = prefix + rest;
+
+      return `;;wasm
+        (block $check_${keyword}
+          (if
+            (i32.and
+              (i32.eq
+                (i32.load8_u
+${start})
+                (i32.const ${charToHex(rest[0])}))
+              (i32.eq
+                (local.get $len)
+                (i32.const ${keyword.length})))
+            (then
+${rest.slice(1).split('').map((c, i) => `;;wasm
+              (if
+                (i32.ne
+                  (i32.load8_u
+                    (i32.add
+                      (local.get $start)
+                      (i32.const ${i + offset})))
+                  (i32.const ${charToHex(c)}))
+                (then
+                  (br $check_${keyword})))
+`).join('')}
+              (local.set $result
+                (global.get ${token}))
+              (br $out))))
+`}).join('');
+
+  return prefix ? `;;wasm
         (if
           (i32.and
             (i32.eq
               (i32.load8_u
                 (local.get $start))
-              (i32.const ${charToHex(keyword[0])}))
-            (i32.eq
+              (i32.const ${charToHex(prefix)}))
+            (i32.gt_u
               (local.get $len)
-              (i32.const ${keyword.length})))
+              (i32.const 1)))
           (then
-${keyword.slice(1).split('').map((c, i) => `;;wasm
-            (if
-              (i32.ne
-                (i32.load8_u
-                  (i32.add
-                    (local.get $start)
-                    (i32.const ${i + 1})))
-                (i32.const ${charToHex(c)}))
-              (then
-                (br $check_${keyword})))
-`).join('')}
-        (local.set $result
-          (global.get ${token}))
-        (br $out))))
-`).join('')}
+${indent(cases, 4)}))` : cases;
+}).join('')}
       (local.set $result
         (global.get $TOKEN_IDENTIFIER))
       (br $out)))

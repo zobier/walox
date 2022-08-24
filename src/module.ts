@@ -1,4 +1,5 @@
 import chunk from './chunk';
+import { indent } from './common';
 import compiler from './compiler';
 import debug from './debug';
 import main from './main';
@@ -8,8 +9,6 @@ import stack from './stack';
 import util from './util';
 import value from './value';
 import vm from './vm';
-
-const indent = (s: string, n: number) => s.replace(/^/mg, ' '.repeat(n));
 
 export default `;;wasm
 (module
