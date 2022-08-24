@@ -155,14 +155,6 @@ ${enumToGlobals(TOKENS)}
         (local.get $this)
         (i32.const 4)))) ;; *current
   (block $out
-    (if
-      (i32.eq
-        (local.get $current)
-        (local.get $end))
-      (then
-        (local.set $result
-          (global.get $TOKEN_EOF))
-        (br $out)))
     (block $end_whitespace
       (loop $skip_whitespace
         (local.set $char
@@ -228,6 +220,14 @@ ${enumToGlobals(TOKENS)}
             )
           )
         (br $end_whitespace)))
+    (if
+      (i32.eq
+        (local.get $current)
+        (local.get $end))
+      (then
+        (local.set $result
+          (global.get $TOKEN_EOF))
+        (br $out)))
     (local.set $start
       (local.get $current))
 ${Object.entries({

@@ -26,7 +26,16 @@ wabt()
     console.log('--');
     const memArray = new Uint32Array(mem.buffer);
     const source = Uint32Array.from(
-      `fun outer() { var x = "outside"; fun inner() { print x; } return inner; } var closure = outer(); closure();`,
+      `fun outer() {
+         var x = "outside";
+         fun inner() {
+           print x;
+          }
+          return inner;
+        }
+        var closure = outer();
+        closure();
+      `,
       (c) => c.codePointAt(0) || 0,
     );
     memArray.set([source.length]);
