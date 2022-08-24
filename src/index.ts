@@ -6,8 +6,12 @@ import { getUtil } from './util';
 wabt().then(async (wabt) => {
   const module = await WebAssembly.compile(
     wabt
-      .parseWat('inline', moduleSrc)
-      .toBinary({})
+      .parseWat('inline', moduleSrc, {
+        multi_value: true,
+      })
+      .toBinary({
+        write_debug_names: true,
+      })
       .buffer
   );
   const mem = new WebAssembly.Memory({ initial: 1 });

@@ -88,6 +88,8 @@ ${Object.entries({
 (func $compile
   (param $srcptr i32)
   (local $token i32)
+  (local $start i32)
+  (local $len i32)
   (local $opstack i32)
   (local $op i32)
   (local $prec i32)
@@ -107,7 +109,9 @@ ${Object.entries({
       (local.set $prev
         (local.get $token))
       (local.set $token
-        (call $scan_token))
+        (local.set $start
+          (local.set $len
+            (call $scan_token))))
       (if
         (i32.eq
           (local.get $token)
@@ -124,8 +128,8 @@ ${Object.entries({
           (call $write_chunk
             (call $write_value_array
               (call $stringToDouble
-                (global.get $start)
-                (global.get $len))))
+                (local.get $start)
+                (local.get $len))))
           (br $run)))
 ${Object.entries({
   '$TOKEN_NIL': '$OP_NIL',
