@@ -1,4 +1,4 @@
-import { enumToGlobals } from './common';
+import { enumToGlobals, indent, watSwitch } from './common';
 
 export enum INTERPRET_RESULT {
   INTERPRET_OK = 1,
@@ -27,185 +27,140 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (i32.load8_u
           (call $get_codeptr
             (local.get $ip))))
-      ;; todo: create equivalent of switch for the following
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_CONSTANT))
-        (then
-          (call $push
-            (call $get_value
-              (i32.load8_u
-                (call $get_codeptr
-                  (local.tee $ip
-                    (i32.add
-                      (local.get $ip)
-                      (i32.const 1)))))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NIL))
-        (then
-          (call $push
-            (f64.reinterpret_i64
-              (global.get $NIL)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_TRUE))
-        (then
-          (call $push
-            (f64.reinterpret_i64
-              (global.get $TRUE)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_FALSE))
-        (then
-          (call $push
-            (f64.reinterpret_i64
-              (global.get $FALSE)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NOT))
-        (then
-          (call $push
-            (call $bool_val
-              (i32.eqz
-                (call $as_bool
-                  (call $pop)))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NOT_EQUAL)) ;; fix: nil != nil
-        (then
-          (call $push
-            (call $bool_val
-              (i32.eqz
-                (f64.eq
-                  (call $pop)
-                  (call $pop)))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_EQUAL))
-        (then
-          (call $push
-            (call $bool_val
-              (f64.eq
-                (call $pop)
-                (call $pop))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_GREATER))
-        (then
-          (local.set $tmp ;; could invert comparison logic instead but harder to read
-            (call $pop))
-          (call $push
-            (call $bool_val
-              (f64.gt
-                (call $pop)
-                (local.get $tmp))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NOT_LESS))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (call $bool_val
-              (f64.ge
-                (call $pop)
-                (local.get $tmp))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_LESS))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (call $bool_val
-              (f64.lt
-                (call $pop)
-                (local.get $tmp))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NOT_GREATER))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (call $bool_val
-              (f64.le
-                (call $pop)
-                (local.get $tmp))))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_ADD))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (f64.add
-              (call $pop)
-              (local.get $tmp)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_SUBTRACT))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (f64.sub
-              (call $pop)
-              (local.get $tmp)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_MULTIPLY))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (f64.mul
-              (call $pop)
-              (local.get $tmp)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_DIVIDE))
-        (then
-          (local.set $tmp
-            (call $pop))
-          (call $push
-            (f64.div
-              (call $pop)
-              (local.get $tmp)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NEGATE))
-        (then
-          (call $push
-            (f64.neg
+${indent(watSwitch(
+  '$code_switch',
+  value => `;;wasm
+    (i32.eq
+      (local.get $code)
+      ${value})`,
+  label => ({
+    '(global.get $OP_CONSTANT)': `;;wasm
+      (call $push
+        (call $get_value
+          (i32.load8_u
+            (call $get_codeptr
+              (local.tee $ip
+                (i32.add
+                  (local.get $ip)
+                  (i32.const 1)))))))
+      (br ${label})`,
+    '(global.get $OP_NIL)': `;;wasm
+      (call $push
+        (f64.reinterpret_i64
+          (global.get $NIL)))
+      (br ${label})`,
+    '(global.get $OP_TRUE)': `;;wasm
+      (call $push
+        (f64.reinterpret_i64
+          (global.get $TRUE)))
+      (br ${label})`,
+    '(global.get $OP_FALSE)': `;;wasm
+      (call $push
+        (f64.reinterpret_i64
+          (global.get $FALSE)))
+      (br ${label})`,
+    '(global.get $OP_NOT)': `;;wasm
+      (call $push
+        (call $bool_val
+          (i32.eqz
+            (call $as_bool
               (call $pop)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_RETURN))
-        (then
-          (call $print_value
-            (call $pop))
-          (local.set $result
-            (global.get $INTERPRET_OK))
-          (br $out)))
+      (br ${label})`,
+    '(global.get $OP_NOT_EQUAL)) ;; fix: nil != nil': `;;wasm
+      (call $push
+        (call $bool_val
+          (i32.eqz
+            (f64.eq
+              (call $pop)
+              (call $pop)))))
+      (br ${label})`,
+    '(global.get $OP_EQUAL)': `;;wasm
+      (call $push
+        (call $bool_val
+          (f64.eq
+            (call $pop)
+            (call $pop))))
+      (br ${label})`,
+    '(global.get $OP_GREATER)': `;;wasm
+      (local.set $tmp ;; could invert comparison logic instead but harder to read
+        (call $pop))
+      (call $push
+        (call $bool_val
+          (f64.gt
+            (call $pop)
+            (local.get $tmp))))
+      (br ${label})`,
+    '(global.get $OP_NOT_LESS)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (call $bool_val
+          (f64.ge
+            (call $pop)
+            (local.get $tmp))))
+      (br ${label})`,
+    '(global.get $OP_LESS)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (call $bool_val
+          (f64.lt
+            (call $pop)
+            (local.get $tmp))))
+      (br ${label})`,
+    '(global.get $OP_NOT_GREATER)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (call $bool_val
+          (f64.le
+            (call $pop)
+            (local.get $tmp))))
+      (br ${label})`,
+    '(global.get $OP_ADD)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (f64.add
+          (call $pop)
+          (local.get $tmp)))
+      (br ${label})`,
+    '(global.get $OP_SUBTRACT)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (f64.sub
+          (call $pop)
+          (local.get $tmp)))
+      (br ${label})`,
+    '(global.get $OP_MULTIPLY)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (f64.mul
+          (call $pop)
+          (local.get $tmp)))
+      (br ${label})`,
+    '(global.get $OP_DIVIDE)': `;;wasm
+      (local.set $tmp
+        (call $pop))
+      (call $push
+        (f64.div
+          (call $pop)
+          (local.get $tmp)))
+      (br ${label})`,
+    '(global.get $OP_NEGATE)': `;;wasm
+      (call $push
+        (f64.neg
+          (call $pop)))
+      (br ${label})`,
+    '(global.get $OP_RETURN)': `;;wasm
+      (call $print_value
+        (call $pop))
+      (local.set $result
+        (global.get $INTERPRET_OK))
+      (br $out)`,
+  })), 6)}
       (br_if $run
         (i32.lt_s
           (local.tee $ip
