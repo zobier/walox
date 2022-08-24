@@ -122,16 +122,16 @@ ${indent(watSwitch(
         (call $pop))
       (if
         (i32.and
-          (call $is_obj ;; todo: check for string obj when adding other types
+          (call $is_string
             (local.get $tmp))
-          (call $is_obj
+          (call $is_string
             (call $peek)))
         (then
           (call $push
             (call $concatenate
-              (call $as_obj
+              (call $get_string
                 (call $pop))
-              (call $as_obj
+              (call $get_string
                 (local.get $tmp)))))
         (else
           (call $push

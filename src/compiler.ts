@@ -146,7 +146,7 @@ ${Object.entries({
             (global.get $OP_CONSTANT))
           (call $write_chunk
             (call $write_value_array
-              (call $copyString
+              (call $copy_string
                 (i32.add
                   (local.get $start)
                   (i32.const 4))

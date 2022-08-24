@@ -173,14 +173,14 @@ export default `;;wasm
           (local.get $a)
           (local.get $b)))))
   (if
-    (call $is_obj
+    (call $is_string
       (local.get $a))
     (then
       (local.set $result
-        (call $strCmp
-          (call $as_obj
+        (call $str_cmp
+          (call $get_string
             (local.get $a))
-          (call $as_obj
+          (call $get_string
             (local.get $b)))))
     (else
       (local.set $result
@@ -206,11 +206,11 @@ export default `;;wasm
     (then
       (call $logNil)))
   (if
-    (call $is_obj
+    (call $is_string
       (local.get $v))
     (then
       (local.set $ptr
-        (call $as_obj
+        (call $get_string
           (local.get $v)))
       (call $logString
         (local.get $ptr)
