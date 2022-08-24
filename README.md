@@ -1,12 +1,12 @@
 # walox
 
-A WebAssembly port of the C implementation of Lox from 
+A WebAssembly port of the C implementation of Lox from
 [https://craftinginterpreters.com/](https://craftinginterpreters.com/)
 
 ## Prerequisites
 
-* [Node](https://nodejs.org/en/download/)
-* [Yarn](https://yarnpkg.com/getting-started/install)
+- [Node](https://nodejs.org/en/download/)
+- [Yarn](https://yarnpkg.com/getting-started/install)
 
 ## Building
 

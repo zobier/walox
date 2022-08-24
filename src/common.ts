@@ -1,11 +1,16 @@
+interface enumObject {
+  [k: number]: string;
+}
+
 export const watSwitch = (
   value: string,
   cases: [number, string][],
+  caseEnum: enumObject | null = null,
   default_case: string = '',
 ) => {
   const { head, tail, targets } = cases.reduce(
     ({ head, tail, targets }, [target, consequent], i) => {
-      const label: string = `$case${i}`;
+      const label: string = caseEnum ? `$${caseEnum[target]}` : `$case${i}`;
       (targets[target] as any) = label;
       return {
         head: `;;wasm

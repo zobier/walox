@@ -1,4 +1,4 @@
-import { charToHex, watSwitch } from "./common";
+import { charToHex, watSwitch } from './common';
 
 export enum NATIVE {
   NATIVE_NOW = 1,
@@ -43,9 +43,10 @@ ${watSwitch(
       `;;wasm
       (local.set $result
         (call $now))
-      (br $break)`
+      (br $break)`,
     ],
-  ]
+  ],
+  NATIVE,
 )}
   (local.get $result))
 `;

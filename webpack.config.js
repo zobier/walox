@@ -3,9 +3,7 @@ const path = require('path');
 const ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
 module.exports = {
-  entry: [
-    './src/index.ts',
-  ],
+  entry: ['./src/index.ts'],
   devServer: {
     static: './dist',
   },

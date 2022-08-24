@@ -186,6 +186,7 @@ ${watSwitch(
       (br $break)`,
     ],
   ],
+  OP_CODES,
 )}
   (local.get $i))
 (func $print_frame

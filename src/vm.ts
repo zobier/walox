@@ -106,7 +106,7 @@ export default `;;wasm
     `;;wasm
     (local.get $frameptr)`,
     `;;wasm
-    (local.get $ip)`
+    (local.get $ip)`,
   )})
 (func $get_slotptr
   (param $frameptr i32)
@@ -202,7 +202,8 @@ export default `;;wasm
               (local.get $callee))))
         (br $break)`,
       ],
-    ]
+    ],
+    OBJ_TYPE,
   )}
   (local.get $frame))
 (func $capture_upvalue
@@ -896,6 +897,7 @@ ${indent(
         `,
       ],
     ],
+    OP_CODES,
   ),
   6,
 )}

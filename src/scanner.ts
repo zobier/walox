@@ -73,21 +73,21 @@ export default `;;wasm
       (i32.mul
       (call $get_len
         (local.get $srcptr))
-      (i32.const 4)))`
+      (i32.const 4)))`,
   )}
   ${Scanner.set(
     '*current',
     `;;wasm
     (local.get $this)`,
     `;;wasm
-    (local.get $srcptr)`
+    (local.get $srcptr)`,
   )}
   ${Scanner.set(
     'line',
     `;;wasm
     (local.get $this)`,
     `;;wasm
-    (i32.const 1)`
+    (i32.const 1)`,
   )}
   (global.set $scanner
     (local.get $this)))
@@ -157,13 +157,13 @@ export default `;;wasm
     ${Scanner.get(
       '*end',
       `;;wasm
-      (local.get $this)`
+      (local.get $this)`,
     )})
   (local.set $current
     ${Scanner.get(
       '*current',
       `;;wasm
-      (local.get $this)`
+      (local.get $this)`,
     )})
   (block $out
     (block $end_whitespace
@@ -539,7 +539,7 @@ ${indent(cases, 4)}))`
     `;;wasm
     (local.get $this)`,
     `;;wasm
-    (local.get $current)`
+    (local.get $current)`,
   )}
   (local.get $result)
   (local.get $start)

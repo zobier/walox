@@ -324,6 +324,7 @@ ${indent(
         (br $break)`,
       ],
     ],
+    TOKENS,
     `;;wasm
     (local.set $result
       (i32.const ${PRECEDENCE.PREC_NONE}))`,
@@ -385,6 +386,7 @@ ${indent(
         (br $break)`,
       ],
     ],
+    TOKENS,
   ),
   2,
 )} ;; default should be "expect expression" error
@@ -447,6 +449,7 @@ ${indent(
         `,
       ],
     ],
+    TOKENS,
   ),
   8,
 )}
@@ -1301,6 +1304,7 @@ ${indent(
         (br $break)`,
       ],
     ],
+    TOKENS,
   ),
   2,
 )}
@@ -1390,6 +1394,7 @@ ${indent(
         (br $break)`,
       ],
     ],
+    TOKENS,
   ),
   2,
 )}
@@ -1451,6 +1456,7 @@ ${indent(
         (br $break)`,
       ],
     ],
+    TOKENS,
   ),
   2,
 )}
