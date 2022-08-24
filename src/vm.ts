@@ -9,25 +9,34 @@ export enum INTERPRET_RESULT {
 
 export default `;;wasm
 ${enumToGlobals(INTERPRET_RESULT)}
+(global $ip
+  (mut i32)
+  (i32.const 0))
+(func $read_byte
+  (result i32)
+  (global.set $ip
+    (i32.add
+      (global.get $ip)
+      (i32.const 1)))
+  (i32.load8_u
+    (call $get_codeptr
+      (global.get $ip))))
 (func $interpret
   (param $srcptr i32)
   (result i32)
-  (local $ip i32)
   (local $code i32)
   (local $tmp f64)
   (local $result i32)
   (call $compile
     (local.get $srcptr))
   ;;(call $dissasemble)
-  (local.set $ip
-    (i32.const 0))
   (call $init_stack)
   (block $out
     (loop $run
       (local.set $code
         (i32.load8_u
           (call $get_codeptr
-            (local.get $ip))))
+            (global.get $ip))))
 ${indent(
   watSwitch(
     `;;wasm
@@ -36,12 +45,7 @@ ${indent(
       [OP_CODES.OP_CONSTANT]: `;;wasm
       (call $push
         (call $get_value
-          (i32.load8_u
-            (call $get_codeptr
-              (local.tee $ip
-                (i32.add
-                  (local.get $ip)
-                  (i32.const 1)))))))
+          (call $read_byte)))
       (br $break)`,
       [OP_CODES.OP_NIL]: `;;wasm
       (call $push
@@ -64,54 +68,29 @@ ${indent(
       [OP_CODES.OP_GET_LOCAL]: `;;wasm
       (call $push
         (call $stack_get
-          (i32.load8_u
-            (call $get_codeptr
-              (local.tee $ip
-                (i32.add
-                  (local.get $ip)
-                  (i32.const 1)))))))
+          (call $read_byte)))
       (br $break)`,
       [OP_CODES.OP_GET_GLOBAL]: `;;wasm
       (call $push
         (call $table_get
           (call $get_value
-            (i32.load8_u
-              (call $get_codeptr
-                (local.tee $ip
-                  (i32.add
-                    (local.get $ip)
-                    (i32.const 1))))))))
+            (call $read_byte))))
       (br $break)`,
       [OP_CODES.OP_DEFINE_GLOBAL]: `;;wasm
       (call $table_set
         (call $get_value
-          (i32.load8_u
-            (call $get_codeptr
-              (local.tee $ip
-                (i32.add
-                  (local.get $ip)
-                  (i32.const 1))))))
+          (call $read_byte))
         (call $pop))
       (br $break)`,
       [OP_CODES.OP_SET_LOCAL]: `;;wasm
       (call $stack_set
-        (i32.load8_u
-          (call $get_codeptr
-            (local.tee $ip
-              (i32.add
-                (local.get $ip)
-                (i32.const 1)))))
+        (call $read_byte)
         (call $peek))
       (br $break)`,
       [OP_CODES.OP_SET_GLOBAL]: `;;wasm
       (call $table_set ;; todo: check if not exists (new key)
         (call $get_value
-          (i32.load8_u
-            (call $get_codeptr
-              (local.tee $ip
-                (i32.add
-                  (local.get $ip)
-                  (i32.const 1))))))
+          (call $read_byte))
         (call $peek))
       (br $break)`,
       [OP_CODES.OP_NOT]: `;;wasm
@@ -235,13 +214,11 @@ ${indent(
   ),
   6,
 )}
-      (br_if $run
-        (i32.lt_s
-          (local.tee $ip
-            (i32.add
-              (local.get $ip)
-              (i32.const 1)))
-          (i32.const 0xfff))) ;; exit if no return before we run out of memory
+      (global.set $ip
+        (i32.add
+          (global.get $ip)
+          (i32.const 1)))
+      (br $run)
       (local.set $result
         (global.get $INTERPRET_RUNTIME_ERROR))))
     (local.get $result))
