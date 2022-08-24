@@ -148,6 +148,17 @@ export default `;;wasm
       (local.get $callee))`,
     [
       [
+        OBJ_TYPE.OBJ_BOUND_METHOD,
+        `;;wasm
+        (local.set $frame
+          (call $call_value
+            (local.get $frame)
+            (call $get_method
+              (local.get $callee))
+            (local.get $arg_count)))
+        (br $break)`,
+      ],
+      [
         OBJ_TYPE.OBJ_CLASS,
         `;;wasm
         (call $push ;; should go to stackTop[-argCount - 1]
@@ -473,19 +484,49 @@ ${indent(
       [
         OP_CODES.OP_GET_PROPERTY,
         `;;wasm
-        (local.set $tmp
-          (call $table_get
-            (call $get_fields
-              (f64.load
-                (call $peek
-                  (i32.const 0))))
-            (call $get_value
-              (call $read_byte
-                (local.get $frame)))))
+        (if
+          (f64.ne
+            (local.tee $tmp
+              (call $table_get
+                (call $get_fields
+                  (f64.load
+                    (call $peek
+                      (i32.const 0))))
+                (call $get_value
+                  (call $read_byte
+                    (local.get $frame)))))
+            (f64.const 0)) ;; really need a better value for not found
+          (then
+            (drop
+              (call $pop))
+            (call $push
+              (local.get $tmp)))
+          (else
+            (if
+              (f64.ne
+                (local.tee $tmp
+                  (call $table_get
+                    (call $get_methods
+                      (call $obj_val
+                        (call $get_class
+                          (f64.load
+                            (call $peek
+                              (i32.const 0))))))
+                    (call $get_value
+                      (call $read_byte
+                        (local.get $frame)))))
+                (f64.const 0))
+              (then
+                (drop
+                  (call $pop))
+                (call $push
+                  (call $new_bound_method
+                    (f64.load
+                      (call $peek
+                        (i32.const 0)))
+                    (call $as_obj
+                      (local.get $tmp))))))))
         ;; todo: error if undefined property or not instance
-        (call $pop)
-        (call $push
-          (local.get $tmp))
         (br $break)`,
       ],
       [
@@ -727,7 +768,7 @@ ${indent(
                 (call $get_ip
                   (local.get $frame))
                 (local.get $offset)))))
-            (br $break)`,
+        (br $break)`,
       ],
       [
         OP_CODES.OP_LOOP,

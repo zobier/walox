@@ -35,7 +35,7 @@ export default `;;wasm
     (i32.add
       (local.get $top_of_stack)
       (i32.const 8)))) ;; 64 / 8
-(func $peek
+(func $peek ;; should this return a value rather than ptr
   (param $i i32)
   (result i32)
   (i32.sub

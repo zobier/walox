@@ -1,7 +1,8 @@
 import { struct } from './common';
 
 export enum OBJ_TYPE {
-  OBJ_CLASS = 1,
+  OBJ_BOUND_METHOD = 1,
+  OBJ_CLASS,
   OBJ_CLOSURE,
   OBJ_FUNCTION,
   OBJ_INSTANCE,
@@ -46,6 +47,11 @@ const ObjInstance = struct([
   ['OBJ_TYPE', 'i32'],
   ['*class', 'i32'],
   ['*fields', 'i32'],
+]);
+const ObjBoundMethod = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['receiver', 'f64'],
+  ['*method', 'i32'],
 ]);
 
 export default `;;wasm
@@ -261,6 +267,29 @@ export default `;;wasm
     (local.get $ptr)`,
     `;;wasm
     (call $init_table)`,
+  )}
+  (call $obj_val
+    (local.get $ptr)))
+(func $new_bound_method
+  (param $receiver f64)
+  (param $methodptr i32)
+  (result f64)
+  (local $ptr i32)
+  (local.set $ptr
+    ${ObjBoundMethod.alloc()})
+  ${ObjBoundMethod.set(
+    'receiver',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $receiver)`,
+  )}
+  ${ObjBoundMethod.set(
+    '*method',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $methodptr)`,
   )}
   (call $obj_val
     (local.get $ptr)))
@@ -552,6 +581,16 @@ export default `;;wasm
     (call $as_obj
       (local.get $v))`,
   )})
+(func $get_method
+  (param $v f64)
+  (result f64)
+  (call $obj_val
+    ${ObjBoundMethod.get(
+      '*method',
+      `;;wasm
+      (call $as_obj
+        (local.get $v))`,
+    )}))
 (func $copy_string
   (param $start i32)
   (param $len i32)

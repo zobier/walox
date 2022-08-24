@@ -278,6 +278,21 @@ export default `;;wasm
             (call $obj_val
               (local.get $ptr)))))))
   (if
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_BOUND_METHOD}))
+    (then
+      (if
+        (local.tee $ptr
+          (call $as_obj
+            (call $get_closure_function
+              (call $get_method
+                (local.get $v)))))
+        (then
+          (call $print_value
+            (call $obj_val
+              (local.get $ptr)))))))
+  (if
     (call $is_number
       (local.get $v))
     (then
