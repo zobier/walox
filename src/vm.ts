@@ -21,11 +21,26 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (i32.load8_u
     (call $get_codeptr
       (global.get $ip))))
+(func $read_short
+  (result i32)
+  (local $cur i32)
+  (local.set $cur
+    (global.get $ip))
+  (global.set $ip
+    (i32.add
+      (local.get $cur)
+      (i32.const 2)))
+  (i32.load16_u
+    (call $get_codeptr
+      (i32.add
+        (local.get $cur)
+        (i32.const 1)))))
 (func $interpret
   (param $srcptr i32)
   (result i32)
   (local $code i32)
   (local $tmp f64)
+  (local $offset i32)
   (local $result i32)
   (call $compile
     (local.get $srcptr))
@@ -205,6 +220,27 @@ ${indent(
       [OP_CODES.OP_PRINT]: `;;wasm
       (call $print_value
         (call $pop))
+      (br $break)`,
+      [OP_CODES.OP_JUMP]: `;;wasm
+      (local.set $offset
+        (call $read_short))
+      (global.set $ip
+        (i32.add
+          (global.get $ip)
+          (local.get $offset)))
+      (br $break)`,
+      [OP_CODES.OP_JUMP_IF_FALSE]: `;;wasm
+      (local.set $offset
+        (call $read_short))
+      (if
+        (i32.eqz
+          (call $as_bool
+            (call $peek)))
+        (then
+          (global.set $ip
+            (i32.add
+              (global.get $ip)
+              (local.get $offset)))))
       (br $break)`,
       [OP_CODES.OP_RETURN]: `;;wasm
       (local.set $result

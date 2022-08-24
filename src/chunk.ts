@@ -24,6 +24,8 @@ export enum OP_CODES {
   OP_NOT,
   OP_NEGATE,
   OP_PRINT,
+  OP_JUMP,
+  OP_JUMP_IF_FALSE,
   OP_RETURN,
 }
 
@@ -89,4 +91,11 @@ ${enumToGlobals(OP_CODES)}
     (i32.add
       (local.get $count)
       (i32.const 1))))
+(func $patch_chunk
+  (param $i i32)
+  (param $code i32)
+  (i32.store8
+    (call $get_codeptr
+      (local.get $i))
+    (local.get $code)))
 `;

@@ -331,6 +331,71 @@ ${indent(
     (global.get $TOKEN_SEMICOLON))
   (call $write_chunk
     (global.get $OP_POP)))
+(func $emit_jump
+  (param $instruction i32)
+  (result i32)
+  (call $write_chunk
+    (local.get $instruction))
+  (call $write_chunk
+    (i32.const 0xff))
+  (call $write_chunk
+    (i32.const 0xff))
+  (i32.sub
+    (i32.load
+      (global.get $chunk)) ;; count
+    (i32.const 2)))
+(func $patch_jump
+  (param $offset i32)
+  (local $jump i32)
+  (local.set $jump
+    (i32.sub
+      (i32.sub
+        (i32.load
+          (global.get $chunk)) ;; count
+        (local.get $offset))
+      (i32.const 2)))
+  (call $patch_chunk
+    (local.get $offset)
+    (i32.and
+      (local.get $jump)
+      (i32.const 0xff)))
+  (call $patch_chunk
+    (i32.add
+      (local.get $offset)
+      (i32.const 1))
+    (i32.and
+      (i32.shr_u
+        (local.get $jump)
+        (i32.const 8))
+      (i32.const 0xff))))
+(func $if_statement
+  (local $then_jump i32)
+  (local $else_jump i32)
+  (call $consume
+    (global.get $TOKEN_LEFT_PAREN))
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_RIGHT_PAREN))
+  (local.set $then_jump
+    (call $emit_jump
+      (global.get $OP_JUMP_IF_FALSE)))
+  (call $write_chunk
+    (global.get $OP_POP))
+  (call $statement)
+  (local.set $else_jump
+    (call $emit_jump
+      (global.get $OP_JUMP)))
+  (call $patch_jump
+    (local.get $then_jump))
+  (call $write_chunk
+    (global.get $OP_POP))
+  (if
+    (call $match_token
+      (global.get $TOKEN_ELSE))
+    (then
+      (call $statement)))
+  (call $patch_jump
+    (local.get $else_jump)))
 (func $print_statement
   (call $expression)
   (call $consume
@@ -354,13 +419,19 @@ ${indent(
     (else
       (if
         (call $match_token
-          (global.get $TOKEN_LEFT_BRACE))
+          (global.get $TOKEN_IF))
         (then
-          (call $begin_scope)
-          (call $block)
-          (call $end_scope))
+          (call $if_statement))
         (else
-          (call $expression_statement))))))
+          (if
+            (call $match_token
+              (global.get $TOKEN_LEFT_BRACE))
+            (then
+              (call $begin_scope)
+              (call $block)
+              (call $end_scope))
+            (else
+              (call $expression_statement))))))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))
