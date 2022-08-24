@@ -74,6 +74,12 @@ ${Object.entries({
   '$OP_MULTIPLY': '$PREC_FACTOR',
   '$OP_NEGATE': '$PREC_UNARY',
   '$OP_NOT': '$PREC_NONE',
+  '$OP_NOT_EQUAL': '$PREC_EQUALITY',
+  '$OP_EQUAL': '$PREC_EQUALITY',
+  '$OP_GREATER': '$PREC_COMPARISON',
+  '$OP_NOT_LESS': '$PREC_COMPARISON',
+  '$OP_LESS': '$PREC_COMPARISON',
+  '$OP_NOT_GREATER': '$PREC_COMPARISON',
 }).map(([op, prec]) => `;;wasm
     (if
       (i32.eq
@@ -200,6 +206,12 @@ ${Object.entries({
   '$TOKEN_SLASH': '$OP_DIVIDE',
   '$TOKEN_STAR': '$OP_MULTIPLY',
   '$TOKEN_BANG': '$OP_NOT',
+  '$TOKEN_BANG_EQUAL': '$OP_NOT_EQUAL',
+  '$TOKEN_EQUAL_EQUAL': '$OP_EQUAL',
+  '$TOKEN_GREATER': '$OP_GREATER',
+  '$TOKEN_GREATER_EQUAL': '$OP_NOT_LESS',
+  '$TOKEN_LESS': '$OP_LESS',
+  '$TOKEN_LESS_EQUAL': '$OP_NOT_GREATER',
 }).map(([token, op]) => `;;wasm
         (if
           (i32.eq

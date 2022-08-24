@@ -356,7 +356,7 @@ ${Object.entries({
         (local.get $char))
       (then
         (block $end_identifier
-          (loop $consume_identifier
+          (loop $consume_identifier ;; fix: consume_identifier is swallowing next char
             (local.set $current
               (i32.add
                 (local.get $current)

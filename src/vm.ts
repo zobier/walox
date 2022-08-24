@@ -68,6 +68,85 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (if
         (i32.eq
           (local.get $code)
+          (global.get $OP_NOT))
+        (then
+          (call $push
+            (call $bool_val
+              (i32.eqz
+                (call $as_bool
+                  (call $pop)))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_NOT_EQUAL)) ;; fix: nil != nil
+        (then
+          (call $push
+            (call $bool_val
+              (i32.eqz
+                (f64.eq
+                  (call $pop)
+                  (call $pop)))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_EQUAL))
+        (then
+          (call $push
+            (call $bool_val
+              (f64.eq
+                (call $pop)
+                (call $pop))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_GREATER))
+        (then
+          (local.set $tmp ;; could invert comparison logic instead but harder to read
+            (call $pop))
+          (call $push
+            (call $bool_val
+              (f64.gt
+                (call $pop)
+                (local.get $tmp))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_NOT_LESS))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (call $bool_val
+              (f64.ge
+                (call $pop)
+                (local.get $tmp))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_LESS))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (call $bool_val
+              (f64.lt
+                (call $pop)
+                (local.get $tmp))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_NOT_GREATER))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (call $bool_val
+              (f64.le
+                (call $pop)
+                (local.get $tmp))))))
+      (if
+        (i32.eq
+          (local.get $code)
           (global.get $OP_ADD))
         (then
           (local.set $tmp
@@ -109,16 +188,6 @@ ${enumToGlobals(INTERPRET_RESULT)}
             (f64.div
               (call $pop)
               (local.get $tmp)))))
-      (if
-        (i32.eq
-          (local.get $code)
-          (global.get $OP_NOT))
-        (then
-          (call $push
-            (call $bool_val
-              (i32.eqz
-                (call $as_bool
-                  (call $pop)))))))
       (if
         (i32.eq
           (local.get $code)
