@@ -487,6 +487,51 @@ ${indent(
       (call $statement)))
   (call $patch_jump
     (local.get $else_jump)))
+(func $emit_loop
+  (param $loop_start i32)
+  (local $jump i32)
+  (call $write_chunk
+    (global.get $OP_LOOP))
+  (local.set $jump
+    (i32.add
+      (i32.sub
+        (i32.load
+          (global.get $chunk)) ;; count
+        (local.get $loop_start))
+      (i32.const 2)))
+  (call $write_chunk
+    (i32.and
+      (local.get $jump)
+      (i32.const 0xff)))
+  (call $write_chunk
+    (i32.and
+      (i32.shr_u
+        (local.get $jump)
+        (i32.const 8))
+      (i32.const 0xff))))
+(func $while_statement
+  (local $loop_start i32)
+  (local $exit_jump i32)
+  (local.set $loop_start
+    (i32.load
+      (global.get $chunk))) ;; count
+  (call $consume
+    (global.get $TOKEN_LEFT_PAREN))
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_RIGHT_PAREN))
+  (local.set $exit_jump
+    (call $emit_jump
+      (global.get $OP_JUMP_IF_FALSE)))
+  (call $write_chunk
+    (global.get $OP_POP))
+  (call $statement)
+  (call $emit_loop
+    (local.get $loop_start))
+  (call $patch_jump
+    (local.get $exit_jump))
+  (call $write_chunk
+    (global.get $OP_POP)))
 (func $print_statement
   (call $expression)
   (call $consume
@@ -516,13 +561,19 @@ ${indent(
         (else
           (if
             (call $match_token
-              (global.get $TOKEN_LEFT_BRACE))
+              (global.get $TOKEN_WHILE))
             (then
-              (call $begin_scope)
-              (call $block)
-              (call $end_scope))
+              (call $while_statement))
             (else
-              (call $expression_statement))))))))
+              (if
+                (call $match_token
+                  (global.get $TOKEN_LEFT_BRACE))
+                (then
+                  (call $begin_scope)
+                  (call $block)
+                  (call $end_scope))
+                (else
+                  (call $expression_statement))))))))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))

@@ -318,6 +318,17 @@ ${indent(
         (br $break)`,
       ],
       [
+        OP_CODES.OP_LOOP,
+        `;;wasm
+        (local.set $offset
+          (call $read_short))
+        (global.set $ip
+          (i32.sub
+            (global.get $ip)
+            (local.get $offset)))
+        (br $break)`,
+      ],
+      [
         OP_CODES.OP_RETURN,
         `;;wasm
         (local.set $result

@@ -26,6 +26,9 @@ ${watSwitch(
   `;;wasm
   (local.get $code)`,
   [
+    [OP_CODES.OP_DEFINE_GLOBAL, ''],
+    [OP_CODES.OP_GET_GLOBAL, ''],
+    [OP_CODES.OP_SET_GLOBAL, ''],
     [
       OP_CODES.OP_CONSTANT,
       `;;wasm
@@ -49,6 +52,23 @@ ${watSwitch(
             (i32.add
               (local.get $i)
               (i32.const 1)))))
+      (local.set $i
+        (i32.add
+          (local.get $i)
+          (i32.const 2)))
+      (br $break)`,
+    ],
+    [
+      OP_CODES.OP_LOOP,
+      `;;wasm
+      (call $logNum
+        (i32.sub
+          (i32.const 0)
+          (i32.load16_u
+            (call $get_codeptr
+              (i32.add
+                (local.get $i)
+                (i32.const 1))))))
       (local.set $i
         (i32.add
           (local.get $i)
