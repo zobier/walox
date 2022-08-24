@@ -1,5 +1,3 @@
-import { enumToGlobals } from './common';
-
 export enum OBJ_TYPE {
   OBJ_CLOSURE = 1,
   OBJ_FUNCTION,
@@ -36,7 +34,6 @@ typedef struct {
   i32 *function;
   i32 **upvalue;
 } ObjClosure ;)
-${enumToGlobals(OBJ_TYPE)}
 (func $hash
   (param $charptr i32)
   (result i32)
@@ -81,7 +78,7 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 3)))
   (i32.store
     (local.get $ptr)
-    (global.get $OBJ_STRING))
+    (i32.const ${OBJ_TYPE.OBJ_STRING}))
   (i32.store
     (i32.add
       (local.get $ptr)
@@ -104,7 +101,7 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 5)))
   (i32.store
     (local.get $ptr)
-    (global.get $OBJ_UPVALUE))
+    (i32.const ${OBJ_TYPE.OBJ_UPVALUE}))
   (i32.store
     (i32.add
       (local.get $ptr)
@@ -120,7 +117,7 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 4)))
   (i32.store
     (local.get $ptr)
-    (global.get $OBJ_FUNCTION))
+    (i32.const ${OBJ_TYPE.OBJ_FUNCTION}))
   (i32.store
     (i32.add
       (local.get $ptr)
@@ -152,7 +149,7 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 2)))
   (i32.store
     (local.get $ptr)
-    (global.get $OBJ_NATIVE))
+    (i32.const ${OBJ_TYPE.OBJ_NATIVE}))
   (i32.store
     (i32.add
       (local.get $ptr)
@@ -170,7 +167,7 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 2)))
   (i32.store
     (local.get $ptr)
-    (global.get $OBJ_CLOSURE))
+    (i32.const ${OBJ_TYPE.OBJ_CLOSURE}))
   (i32.store
     (i32.add
       (local.get $ptr)
@@ -200,7 +197,7 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (global.get $OBJ_STRING)))
+        (i32.const ${OBJ_TYPE.OBJ_STRING})))
     (else
       (i32.const 0))))
 (func $is_function
@@ -215,7 +212,7 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (global.get $OBJ_FUNCTION)))
+        (i32.const ${OBJ_TYPE.OBJ_FUNCTION})))
     (else
       (i32.const 0))))
 (func $is_native
@@ -230,7 +227,7 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (global.get $OBJ_NATIVE)))
+        (i32.const ${OBJ_TYPE.OBJ_NATIVE})))
     (else
       (i32.const 0))))
 (func $is_closure
@@ -245,7 +242,7 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (global.get $OBJ_CLOSURE)))
+        (i32.const ${OBJ_TYPE.OBJ_CLOSURE})))
     (else
       (i32.const 0))))
 (func $get_string

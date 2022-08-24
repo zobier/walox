@@ -1,4 +1,4 @@
-import { enumToGlobals, indent, watSwitch } from './common';
+import { indent, watSwitch } from './common';
 import { OP_CODES } from './chunk';
 
 export enum INTERPRET_RESULT {
@@ -8,7 +8,6 @@ export enum INTERPRET_RESULT {
 }
 
 export default `;;wasm
-${enumToGlobals(INTERPRET_RESULT)}
 (; typedef struct {
   i32 *closure;
   i32 *ip;
@@ -725,7 +724,7 @@ ${indent(
           (then
             (call $pop)
             (local.set $result
-              (global.get $INTERPRET_OK))
+              (i32.const ${INTERPRET_RESULT.INTERPRET_OK}))
               (br $out)))
         (i32.store
           (global.get $stack) ;; *top_of_stack
@@ -757,6 +756,6 @@ ${indent(
           (i32.const 1)))
       (br $run)
       (local.set $result
-        (global.get $INTERPRET_RUNTIME_ERROR))))
+        (i32.const ${INTERPRET_RESULT.INTERPRET_RUNTIME_ERROR}))))
     (local.get $result))
 `;

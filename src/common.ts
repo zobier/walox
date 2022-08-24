@@ -1,13 +1,3 @@
-export const enumToGlobals = (e: object) =>
-  Object.keys(e)
-    .filter((key) => isNaN(Number(key)))
-    .map(
-      (op) => `;;wasm
-(global $${op} i32
-  (i32.const ${e[op as keyof typeof e]}))`,
-    )
-    .join('\n');
-
 export const watSwitch = (
   value: string,
   cases: [number, string][],
@@ -42,6 +32,7 @@ ${head}
   (br_table
     ${[...targets].map((t) => t || '$default').join(' ')} $default
     ${value})${tail}
+;; default
 ${default_case}
   ))`;
 };

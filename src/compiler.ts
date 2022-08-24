@@ -1,4 +1,5 @@
-import { enumToGlobals, indent, watSwitch } from './common';
+import { OP_CODES } from './chunk';
+import { indent, watSwitch } from './common';
 import { TOKENS } from './scanner';
 
 export enum PRECEDENCE {
@@ -16,7 +17,6 @@ export enum PRECEDENCE {
 }
 
 export default `;;wasm
-${enumToGlobals(PRECEDENCE)}
 (; typedef struct {
   i32 *name;
   i32 depth;
@@ -246,7 +246,7 @@ ${indent(
         TOKENS.TOKEN_LEFT_PAREN,
         `;;wasm
         (local.set $result
-          (global.get $PREC_CALL))
+          (i32.const ${PRECEDENCE.PREC_CALL}))
         (br $break)`,
       ],
       [TOKENS.TOKEN_PLUS, ''],
@@ -254,7 +254,7 @@ ${indent(
         TOKENS.TOKEN_MINUS,
         `;;wasm
         (local.set $result
-          (global.get $PREC_TERM))
+          (i32.const ${PRECEDENCE.PREC_TERM}))
         (br $break)`,
       ],
       [TOKENS.TOKEN_STAR, ''],
@@ -262,7 +262,7 @@ ${indent(
         TOKENS.TOKEN_SLASH,
         `;;wasm
         (local.set $result
-          (global.get $PREC_FACTOR))
+          (i32.const ${PRECEDENCE.PREC_FACTOR}))
         (br $break)`,
       ],
       [TOKENS.TOKEN_BANG_EQUAL, ''],
@@ -270,7 +270,7 @@ ${indent(
         TOKENS.TOKEN_EQUAL_EQUAL,
         `;;wasm
         (local.set $result
-          (global.get $PREC_EQUALITY))
+          (i32.const ${PRECEDENCE.PREC_EQUALITY}))
         (br $break)`,
       ],
       [TOKENS.TOKEN_GREATER, ''],
@@ -280,27 +280,27 @@ ${indent(
         TOKENS.TOKEN_LESS_EQUAL,
         `;;wasm
         (local.set $result
-          (global.get $PREC_COMPARISON))
+          (i32.const ${PRECEDENCE.PREC_COMPARISON}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_AND,
         `;;wasm
         (local.set $result
-          (global.get $PREC_AND))
+          (i32.const ${PRECEDENCE.PREC_AND}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_OR,
         `;;wasm
         (local.set $result
-          (global.get $PREC_OR))
+          (i32.const ${PRECEDENCE.PREC_OR}))
         (br $break)`,
       ],
     ],
     `;;wasm
     (local.set $result
-      (global.get $PREC_NONE))`,
+      (i32.const ${PRECEDENCE.PREC_NONE}))`,
   ),
   2,
 )}
@@ -618,7 +618,7 @@ ${indent(
 (func $parse_variable
   (result i32)
   (call $consume
-    (global.get $TOKEN_IDENTIFIER))
+    (i32.const ${TOKENS.TOKEN_IDENTIFIER}))
   (if
     (result i32)
     (i32.gt_u
@@ -636,7 +636,7 @@ ${indent(
       (call $get_scope_depth))
     (then
       (call $emit_bytes
-        (global.get $OP_DEFINE_GLOBAL)
+        (i32.const ${OP_CODES.OP_DEFINE_GLOBAL})
         (local.get $global)))))
 (func $arguments_list
   (result i32)
@@ -646,7 +646,7 @@ ${indent(
   (if
     (i32.eqz
       (call $check
-        (global.get $TOKEN_RIGHT_PAREN)))
+        (i32.const ${TOKENS.TOKEN_RIGHT_PAREN})))
     (then
       (loop $arguments
         (call $expression)
@@ -656,19 +656,19 @@ ${indent(
             (i32.const 1)))
         (br_if $arguments
           (call $match_token
-            (global.get $TOKEN_COMMA))))))
+            (i32.const ${TOKENS.TOKEN_COMMA}))))))
   (call $consume
-    (global.get $TOKEN_RIGHT_PAREN))
+    (i32.const ${TOKENS.TOKEN_RIGHT_PAREN}))
   (local.get $arg_count))
 (func $and
   (local $end_jump i32)
   (local.set $end_jump
     (call $emit_jump
-      (global.get $OP_JUMP_IF_FALSE)))
+      (i32.const ${OP_CODES.OP_JUMP_IF_FALSE})))
   (call $emit_byte
-    (global.get $OP_POP))
+    (i32.const ${OP_CODES.OP_POP}))
   (call $parse_precedence
-    (global.get $PREC_AND))
+    (i32.const ${PRECEDENCE.PREC_AND}))
   (call $patch_jump
     (local.get $end_jump)))
 (func $or
@@ -676,36 +676,36 @@ ${indent(
   (local $end_jump i32)
   (local.set $else_jump
     (call $emit_jump
-      (global.get $OP_JUMP_IF_FALSE)))
+      (i32.const ${OP_CODES.OP_JUMP_IF_FALSE})))
   (local.set $end_jump
     (call $emit_jump
-      (global.get $OP_JUMP)))
+      (i32.const ${OP_CODES.OP_JUMP})))
   (call $patch_jump
     (local.get $else_jump))
   (call $emit_byte
-    (global.get $OP_POP))
+    (i32.const ${OP_CODES.OP_POP}))
   (call $parse_precedence
-    (global.get $PREC_OR))
+    (i32.const ${PRECEDENCE.PREC_OR}))
   (call $patch_jump
     (local.get $end_jump)))
 (func $expression
   (call $parse_precedence
-    (global.get $PREC_ASSIGNMENT)))
+    (i32.const ${PRECEDENCE.PREC_ASSIGNMENT})))
 (func $block
   (block $out
     (loop $block_not_eof
       (if
         (i32.or
           (call $check
-            (global.get $TOKEN_RIGHT_BRACE))
+            (i32.const ${TOKENS.TOKEN_RIGHT_BRACE}))
           (call $check
-            (global.get $TOKEN_EOF)))
+            (i32.const ${TOKENS.TOKEN_EOF})))
         (then
           (br $out)))
       (call $declaration)
       (br $block_not_eof)))
   (call $consume
-    (global.get $TOKEN_RIGHT_BRACE)))
+    (i32.const ${TOKENS.TOKEN_RIGHT_BRACE})))
 (func $function
   (local $function f64)
   (local $upvalue_count i32)
@@ -724,11 +724,11 @@ ${indent(
         (global.get $prev_len))))
   (call $begin_scope)
   (call $consume
-    (global.get $TOKEN_LEFT_PAREN))
+    (i32.const ${TOKENS.TOKEN_LEFT_PAREN}))
   (if
     (i32.eqz
       (call $check
-        (global.get $TOKEN_RIGHT_PAREN)))
+        (i32.const ${TOKENS.TOKEN_RIGHT_PAREN})))
     (then
       (loop $parameters
         (call $set_arity
@@ -741,11 +741,11 @@ ${indent(
           (call $parse_variable))
         (br_if $parameters
           (call $match_token
-            (global.get $TOKEN_COMMA))))))
+            (i32.const ${TOKENS.TOKEN_COMMA}))))))
   (call $consume
-    (global.get $TOKEN_RIGHT_PAREN))
+    (i32.const ${TOKENS.TOKEN_RIGHT_PAREN}))
   (call $consume
-    (global.get $TOKEN_LEFT_BRACE))
+    (i32.const ${TOKENS.TOKEN_LEFT_BRACE}))
   (call $block)
   (local.set $upvalues
     (call $get_upvalues
@@ -753,7 +753,7 @@ ${indent(
   (local.set $function
     (call $end_compiler))
   (call $emit_bytes
-    (global.get $OP_CLOSURE)
+    (i32.const ${OP_CODES.OP_CLOSURE})
     (call $write_value_array
       (local.get $function)))
   (local.set $upvalue_count
@@ -798,22 +798,22 @@ ${indent(
     (call $parse_variable))
   (if
     (call $match_token
-      (global.get $TOKEN_EQUAL))
+      (i32.const ${TOKENS.TOKEN_EQUAL}))
     (then
       (call $expression))
     (else
       (call $emit_byte
-        (global.get $OP_NIL))))
+        (i32.const ${OP_CODES.OP_NIL}))))
   (call $consume
-    (global.get $TOKEN_SEMICOLON))
+    (i32.const ${TOKENS.TOKEN_SEMICOLON}))
   (call $define_variable
     (local.get $global)))
 (func $expression_statement
   (call $expression)
   (call $consume
-    (global.get $TOKEN_SEMICOLON))
+    (i32.const ${TOKENS.TOKEN_SEMICOLON}))
   (call $emit_byte
-    (global.get $OP_POP)))
+    (i32.const ${OP_CODES.OP_POP})))
 (func $emit_jump
   (param $instruction i32)
   (result i32)
@@ -864,26 +864,26 @@ ${indent(
   (local $then_jump i32)
   (local $else_jump i32)
   (call $consume
-    (global.get $TOKEN_LEFT_PAREN))
+    (i32.const ${TOKENS.TOKEN_LEFT_PAREN}))
   (call $expression)
   (call $consume
-    (global.get $TOKEN_RIGHT_PAREN))
+    (i32.const ${TOKENS.TOKEN_RIGHT_PAREN}))
   (local.set $then_jump
     (call $emit_jump
-      (global.get $OP_JUMP_IF_FALSE)))
+      (i32.const ${OP_CODES.OP_JUMP_IF_FALSE})))
   (call $emit_byte
-    (global.get $OP_POP))
+    (i32.const ${OP_CODES.OP_POP}))
   (call $statement)
   (local.set $else_jump
     (call $emit_jump
-      (global.get $OP_JUMP)))
+      (i32.const ${OP_CODES.OP_JUMP})))
   (call $patch_jump
     (local.get $then_jump))
   (call $emit_byte
-    (global.get $OP_POP))
+    (i32.const ${OP_CODES.OP_POP}))
   (if
     (call $match_token
-      (global.get $TOKEN_ELSE))
+      (i32.const ${TOKENS.TOKEN_ELSE}))
     (then
       (call $statement)))
   (call $patch_jump
@@ -892,7 +892,7 @@ ${indent(
   (param $loop_start i32)
   (local $jump i32)
   (call $emit_byte
-    (global.get $OP_LOOP))
+    (i32.const ${OP_CODES.OP_LOOP}))
   (local.set $jump
     (i32.add
       (i32.sub
@@ -921,22 +921,22 @@ ${indent(
         (call $get_function
           (global.get $compiler)))))
   (call $consume
-    (global.get $TOKEN_LEFT_PAREN))
+    (i32.const ${TOKENS.TOKEN_LEFT_PAREN}))
   (call $expression)
   (call $consume
-    (global.get $TOKEN_RIGHT_PAREN))
+    (i32.const ${TOKENS.TOKEN_RIGHT_PAREN}))
   (local.set $exit_jump
     (call $emit_jump
-      (global.get $OP_JUMP_IF_FALSE)))
+      (i32.const ${OP_CODES.OP_JUMP_IF_FALSE})))
   (call $emit_byte
-    (global.get $OP_POP))
+    (i32.const ${OP_CODES.OP_POP}))
   (call $statement)
   (call $emit_loop
     (local.get $loop_start))
   (call $patch_jump
     (local.get $exit_jump))
   (call $emit_byte
-    (global.get $OP_POP)))
+    (i32.const ${OP_CODES.OP_POP})))
 (func $for_statement
   (local $loop_start i32)
   (local $exit_jump i32)
@@ -944,15 +944,15 @@ ${indent(
   (local $increment_start i32)
   (call $begin_scope)
   (call $consume
-    (global.get $TOKEN_LEFT_PAREN))
+    (i32.const ${TOKENS.TOKEN_LEFT_PAREN}))
   (if
     (i32.eqz
       (call $match_token
-        (global.get $TOKEN_SEMICOLON)))
+        (i32.const ${TOKENS.TOKEN_SEMICOLON})))
     (then
       (if
         (call $match_token
-          (global.get $TOKEN_VAR))
+          (i32.const ${TOKENS.TOKEN_VAR}))
         (then
           (call $var_declaration))
         (else
@@ -967,24 +967,24 @@ ${indent(
   (if
     (i32.eqz
       (call $match_token
-        (global.get $TOKEN_SEMICOLON)))
+        (i32.const ${TOKENS.TOKEN_SEMICOLON})))
     (then
       (call $expression)
       (call $consume
-        (global.get $TOKEN_SEMICOLON))
+        (i32.const ${TOKENS.TOKEN_SEMICOLON}))
       (local.set $exit_jump
         (call $emit_jump
-          (global.get $OP_JUMP_IF_FALSE)))
+          (i32.const ${OP_CODES.OP_JUMP_IF_FALSE})))
       (call $emit_byte
-        (global.get $OP_POP))))
+        (i32.const ${OP_CODES.OP_POP}))))
   (if
     (i32.eqz
       (call $match_token
-        (global.get $TOKEN_RIGHT_PAREN)))
+        (i32.const ${TOKENS.TOKEN_RIGHT_PAREN})))
     (then
       (local.set $body_jump
         (call $emit_jump
-          (global.get $OP_JUMP)))
+          (i32.const ${OP_CODES.OP_JUMP})))
       (local.set $increment_start
         (i32.load
           (call $get_chunk ;; count
@@ -992,9 +992,9 @@ ${indent(
               (global.get $compiler)))))
       (call $expression)
       (call $emit_byte
-        (global.get $OP_POP))
+        (i32.const ${OP_CODES.OP_POP}))
       (call $consume
-        (global.get $TOKEN_RIGHT_PAREN))
+        (i32.const ${TOKENS.TOKEN_RIGHT_PAREN}))
       (call $emit_loop
         (local.get $loop_start))
       (local.set $loop_start
@@ -1012,36 +1012,36 @@ ${indent(
       (call $patch_jump
         (local.get $exit_jump))
       (call $emit_byte
-        (global.get $OP_POP))))
+        (i32.const ${OP_CODES.OP_POP}))))
   (call $end_scope))
 (func $print_statement
   (call $expression)
   (call $consume
-    (global.get $TOKEN_SEMICOLON))
+    (i32.const ${TOKENS.TOKEN_SEMICOLON}))
   (call $emit_byte
-    (global.get $OP_PRINT)))
+    (i32.const ${OP_CODES.OP_PRINT})))
 (func $return_statement
   (if
     (call $match_token
-      (global.get $TOKEN_SEMICOLON))
+      (i32.const ${TOKENS.TOKEN_SEMICOLON}))
     (then
       (call $emit_return))
     (else
       (call $expression)
       (call $consume
-        (global.get $TOKEN_SEMICOLON))
+        (i32.const ${TOKENS.TOKEN_SEMICOLON}))
       (call $emit_byte
-        (global.get $OP_RETURN)))))
+        (i32.const ${OP_CODES.OP_RETURN})))))
 (func $declaration
   (if
     (call $match_token
-      (global.get $TOKEN_FUN))
+      (i32.const ${TOKENS.TOKEN_FUN}))
     (then
       (call $fun_declaration))
     (else
       (if
         (call $match_token
-          (global.get $TOKEN_VAR))
+          (i32.const ${TOKENS.TOKEN_VAR}))
         (then
           (call $var_declaration))
         (else
@@ -1049,37 +1049,37 @@ ${indent(
 (func $statement
   (if
     (call $match_token
-      (global.get $TOKEN_PRINT))
+      (i32.const ${TOKENS.TOKEN_PRINT}))
     (then
       (call $print_statement))
     (else
       (if
         (call $match_token
-          (global.get $TOKEN_FOR))
+          (i32.const ${TOKENS.TOKEN_FOR}))
         (then
           (call $for_statement))
         (else
           (if
             (call $match_token
-              (global.get $TOKEN_IF))
+              (i32.const ${TOKENS.TOKEN_IF}))
             (then
               (call $if_statement))
             (else
               (if
                 (call $match_token
-                  (global.get $TOKEN_RETURN))
+                  (i32.const ${TOKENS.TOKEN_RETURN}))
                 (then
                   (call $return_statement))
                 (else
                   (if
                     (call $match_token
-                      (global.get $TOKEN_WHILE))
+                      (i32.const ${TOKENS.TOKEN_WHILE}))
                     (then
                       (call $while_statement))
                     (else
                       (if
                         (call $match_token
-                          (global.get $TOKEN_LEFT_BRACE))
+                          (i32.const ${TOKENS.TOKEN_LEFT_BRACE}))
                         (then
                           (call $begin_scope)
                           (call $block)
@@ -1088,14 +1088,14 @@ ${indent(
                           (call $expression_statement))))))))))))))
 (func $number
   (call $emit_bytes
-    (global.get $OP_CONSTANT)
+    (i32.const ${OP_CODES.OP_CONSTANT})
     (call $write_value_array
       (call $stringToDouble
         (global.get $prev_start)
         (global.get $prev_len)))))
 (func $string
   (call $emit_bytes
-    (global.get $OP_CONSTANT)
+    (i32.const ${OP_CODES.OP_CONSTANT})
     (call $write_value_array
       (call $copy_string
         (i32.add
@@ -1124,9 +1124,9 @@ ${indent(
       (i32.const -1))
     (then
       (local.set $get_op
-        (global.get $OP_GET_LOCAL))
+        (i32.const ${OP_CODES.OP_GET_LOCAL}))
       (local.set $set_op
-        (global.get $OP_SET_LOCAL)))
+        (i32.const ${OP_CODES.OP_SET_LOCAL})))
     (else
       (local.set $arg
         (call $resolve_upvalue
@@ -1138,19 +1138,19 @@ ${indent(
           (i32.const -1))
         (then
           (local.set $get_op
-            (global.get $OP_GET_UPVALUE))
+            (i32.const ${OP_CODES.OP_GET_UPVALUE}))
           (local.set $set_op
-            (global.get $OP_SET_UPVALUE)))
+            (i32.const ${OP_CODES.OP_SET_UPVALUE})))
         (else
           (local.set $arg
             (call $identifier_constant))
           (local.set $get_op
-            (global.get $OP_GET_GLOBAL))
+            (i32.const ${OP_CODES.OP_GET_GLOBAL}))
           (local.set $set_op
-            (global.get $OP_SET_GLOBAL))))))
+            (i32.const ${OP_CODES.OP_SET_GLOBAL}))))))
   (if
     (call $match_token
-      (global.get $TOKEN_EQUAL)) ;; todo: check precedence <= PREC_ASSIGNMENT
+      (i32.const ${TOKENS.TOKEN_EQUAL})) ;; todo: check precedence <= PREC_ASSIGNMENT
     (then
       (call $expression)
       (call $emit_byte
@@ -1163,13 +1163,13 @@ ${indent(
 (func $grouping
   (call $expression)
   (call $consume
-    (global.get $TOKEN_RIGHT_PAREN)))
+    (i32.const ${TOKENS.TOKEN_RIGHT_PAREN})))
 (func $unary
   (local $operator i32)
   (local.set $operator
     (global.get $previous))
   (call $parse_precedence
-    (global.get $PREC_UNARY))
+    (i32.const ${PRECEDENCE.PREC_UNARY}))
 ${indent(
   watSwitch(
     `;;wasm
@@ -1179,14 +1179,14 @@ ${indent(
         TOKENS.TOKEN_MINUS,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NEGATE))
+          (i32.const ${OP_CODES.OP_NEGATE}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_BANG,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NOT))
+          (i32.const ${OP_CODES.OP_NOT}))
         (br $break)`,
       ],
     ],
@@ -1212,70 +1212,70 @@ ${indent(
         TOKENS.TOKEN_PLUS,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_ADD))
+          (i32.const ${OP_CODES.OP_ADD}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_MINUS,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_SUBTRACT))
+          (i32.const ${OP_CODES.OP_SUBTRACT}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_STAR,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_MULTIPLY))
+          (i32.const ${OP_CODES.OP_MULTIPLY}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_SLASH,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_DIVIDE))
+          (i32.const ${OP_CODES.OP_DIVIDE}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_BANG_EQUAL,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NOT_EQUAL))
+          (i32.const ${OP_CODES.OP_NOT_EQUAL}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_EQUAL_EQUAL,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_EQUAL))
+          (i32.const ${OP_CODES.OP_EQUAL}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_GREATER,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_GREATER))
+          (i32.const ${OP_CODES.OP_GREATER}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_GREATER_EQUAL,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NOT_LESS))
+          (i32.const ${OP_CODES.OP_NOT_LESS}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_LESS,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_LESS))
+          (i32.const ${OP_CODES.OP_LESS}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_LESS_EQUAL,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NOT_GREATER))
+          (i32.const ${OP_CODES.OP_NOT_GREATER}))
         (br $break)`,
       ],
     ],
@@ -1285,7 +1285,7 @@ ${indent(
   )
 (func $call
   (call $emit_bytes
-    (global.get $OP_CALL)
+    (i32.const ${OP_CODES.OP_CALL})
     (call $arguments_list)))
 (func $literal
   (local $literal i32)
@@ -1300,21 +1300,21 @@ ${indent(
         TOKENS.TOKEN_FALSE,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_FALSE))
+          (i32.const ${OP_CODES.OP_FALSE}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_TRUE,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_TRUE))
+          (i32.const ${OP_CODES.OP_TRUE}))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_NIL,
         `;;wasm
         (call $emit_byte
-          (global.get $OP_NIL))
+          (i32.const ${OP_CODES.OP_NIL}))
         (br $break)`,
       ],
     ],
@@ -1363,18 +1363,18 @@ ${indent(
           (local.get $local_count))
         (then
           (call $emit_byte
-            (global.get $OP_CLOSE_UPVALUE)))
+            (i32.const ${OP_CODES.OP_CLOSE_UPVALUE})))
         (else
           (call $emit_byte
-            (global.get $OP_POP))))
+            (i32.const ${OP_CODES.OP_POP}))))
       (call $set_local_count
         (global.get $compiler)
         (local.get $local_count))
       (br $pop_local))))
 (func $emit_return
   (call $emit_bytes
-    (global.get $OP_NIL)
-    (global.get $OP_RETURN)))
+    (i32.const ${OP_CODES.OP_NIL})
+    (i32.const ${OP_CODES.OP_RETURN})))
 (func $end_compiler
   (result f64)
   (local $function f64)
@@ -1397,7 +1397,7 @@ ${indent(
     (loop $not_eof
       (if
         (call $match_token
-          (global.get $TOKEN_EOF))
+          (i32.const ${TOKENS.TOKEN_EOF}))
         (then
           (br $out)))
       (call $declaration)

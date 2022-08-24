@@ -1,4 +1,4 @@
-import { charToHex, enumToGlobals, indent } from './common';
+import { charToHex, indent } from './common';
 
 export enum TOKENS {
   // Single-character tokens.
@@ -49,7 +49,6 @@ export enum TOKENS {
 }
 
 export default `;;wasm
-${enumToGlobals(TOKENS)}
 (; typedef struct {
   i32 *end;
   i32 *current;
@@ -204,7 +203,7 @@ ${enumToGlobals(TOKENS)}
                         (local.get $end))
                       (then
                         (local.set $result
-                          (global.get $TOKEN_EOF))
+                          (i32.const ${TOKENS.TOKEN_EOF}))
                         (br $out)))
                     (if
                       (call $match
@@ -226,22 +225,22 @@ ${enumToGlobals(TOKENS)}
         (local.get $end))
       (then
         (local.set $result
-          (global.get $TOKEN_EOF))
+          (i32.const ${TOKENS.TOKEN_EOF}))
         (br $out)))
     (local.set $start
       (local.get $current))
 ${Object.entries({
-  '(': '$TOKEN_LEFT_PAREN',
-  ')': '$TOKEN_RIGHT_PAREN',
-  '{': '$TOKEN_LEFT_BRACE',
-  '}': '$TOKEN_RIGHT_BRACE',
-  ';': '$TOKEN_SEMICOLON',
-  ',': '$TOKEN_COMMA',
-  '.': '$TOKEN_DOT',
-  '-': '$TOKEN_MINUS',
-  '+': '$TOKEN_PLUS',
-  '/': '$TOKEN_SLASH',
-  '*': '$TOKEN_STAR',
+  '(': TOKENS.TOKEN_LEFT_PAREN,
+  ')': TOKENS.TOKEN_RIGHT_PAREN,
+  '{': TOKENS.TOKEN_LEFT_BRACE,
+  '}': TOKENS.TOKEN_RIGHT_BRACE,
+  ';': TOKENS.TOKEN_SEMICOLON,
+  ',': TOKENS.TOKEN_COMMA,
+  '.': TOKENS.TOKEN_DOT,
+  '-': TOKENS.TOKEN_MINUS,
+  '+': TOKENS.TOKEN_PLUS,
+  '/': TOKENS.TOKEN_SLASH,
+  '*': TOKENS.TOKEN_STAR,
 })
   .map(
     ([char, token]) => `;;wasm
@@ -251,16 +250,16 @@ ${Object.entries({
         (i32.const ${charToHex(char)}))
       (then
         (local.set $result
-          (global.get ${token}))
+          (i32.const ${token}))
         (br $out)))
 `,
   )
   .join('')}
 ${Object.entries({
-  '!': '$TOKEN_BANG',
-  '=': '$TOKEN_EQUAL',
-  '<': '$TOKEN_LESS',
-  '>': '$TOKEN_GREATER',
+  '!': [TOKENS.TOKEN_BANG, TOKENS.TOKEN_BANG_EQUAL],
+  '=': [TOKENS.TOKEN_EQUAL, TOKENS.TOKEN_EQUAL_EQUAL],
+  '<': [TOKENS.TOKEN_LESS, TOKENS.TOKEN_LESS_EQUAL],
+  '>': [TOKENS.TOKEN_GREATER, TOKENS.TOKEN_GREATER_EQUAL],
 })
   .map(
     ([char, token]) => `;;wasm
@@ -280,10 +279,10 @@ ${Object.entries({
                 (local.get $current)
                 (i32.const 4)))
             (local.set $result
-              (global.get ${token}_EQUAL)))
+              (i32.const ${token[1]})))
           (else
             (local.set $result
-              (global.get ${token}))))
+              (i32.const ${token[0]}))))
         (br $out)))
 `,
   )
@@ -304,7 +303,7 @@ ${Object.entries({
               (local.get $end))
             (then
               (local.set $result
-                (global.get $TOKEN_EOF)) ;; expected '"' got EOF
+                (i32.const ${TOKENS.TOKEN_EOF})) ;; expected '"' got EOF
               (br $out)))
           (if
             (call $match
@@ -313,7 +312,7 @@ ${Object.entries({
               (i32.const ${charToHex('"')}))
             (then
               (local.set $result
-                (global.get $TOKEN_STRING))
+                (i32.const ${TOKENS.TOKEN_STRING}))
               (local.set $current
                 (i32.add
                   (local.get $current)
@@ -386,7 +385,7 @@ ${Object.entries({
                         (i32.const 4)))
                     (br $consume_decimal)))))))
         (local.set $result
-          (global.get $TOKEN_NUMBER))
+          (i32.const ${TOKENS.TOKEN_NUMBER}))
         (br $out)))
     (if
       (call $is_alpha
@@ -429,25 +428,25 @@ ${Object.entries({
             (i32.const 1)))
 ${Object.entries({
   '': {
-    and: '$TOKEN_AND',
-    class: '$TOKEN_CLASS',
-    else: '$TOKEN_ELSE',
-    if: '$TOKEN_IF',
-    nil: '$TOKEN_NIL',
-    or: '$TOKEN_OR',
-    print: '$TOKEN_PRINT',
-    return: '$TOKEN_RETURN',
-    var: '$TOKEN_VAR',
-    while: '$TOKEN_WHILE',
+    and: TOKENS.TOKEN_AND,
+    class: TOKENS.TOKEN_CLASS,
+    else: TOKENS.TOKEN_ELSE,
+    if: TOKENS.TOKEN_IF,
+    nil: TOKENS.TOKEN_NIL,
+    or: TOKENS.TOKEN_OR,
+    print: TOKENS.TOKEN_PRINT,
+    return: TOKENS.TOKEN_RETURN,
+    var: TOKENS.TOKEN_VAR,
+    while: TOKENS.TOKEN_WHILE,
   },
   f: {
-    alse: '$TOKEN_FALSE',
-    or: '$TOKEN_FOR',
-    un: '$TOKEN_FUN',
+    alse: TOKENS.TOKEN_FALSE,
+    or: TOKENS.TOKEN_FOR,
+    un: TOKENS.TOKEN_FUN,
   },
   t: {
-    his: '$TOKEN_THIS',
-    rue: '$TOKEN_TRUE',
+    his: TOKENS.TOKEN_THIS,
+    rue: TOKENS.TOKEN_TRUE,
   },
 })
   .map(([prefix, alternatives]) => {
@@ -493,7 +492,7 @@ ${rest
   )
   .join('')}
               (local.set $result
-                (global.get ${token}))
+                (i32.const ${token}))
               (br $out))))
 `;
       })
@@ -516,7 +515,7 @@ ${indent(cases, 4)}))`
   })
   .join('')}
       (local.set $result
-        (global.get $TOKEN_IDENTIFIER))
+        (i32.const ${TOKENS.TOKEN_IDENTIFIER}))
       (br $out)))
   ) ;; out
   (local.set $current

@@ -1,5 +1,3 @@
-import { enumToGlobals } from './common';
-
 export enum OP_CODES {
   OP_CONSTANT = 1,
   OP_NIL,
@@ -36,7 +34,6 @@ export enum OP_CODES {
 }
 
 export default `;;wasm
-${enumToGlobals(OP_CODES)}
 (; typedef struct {
   i32 count;
   i32 capacity;

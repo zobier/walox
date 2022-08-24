@@ -1,11 +1,10 @@
-import { charToHex, enumToGlobals, watSwitch } from "./common";
+import { charToHex, watSwitch } from "./common";
 
 export enum NATIVE {
   NATIVE_NOW = 1,
 }
 
 export default `;;wasm
-${enumToGlobals(NATIVE)}
 (func $init_native
   (local $charptr i32)
   (local.set $charptr
@@ -29,7 +28,7 @@ ${enumToGlobals(NATIVE)}
       (call $new_string
         (local.get $charptr))
       (call $new_native
-        (global.get $NATIVE_NOW)))))
+        (i32.const ${NATIVE.NATIVE_NOW})))))
 (func $native
   (param $NATIVE i32)
   (result f64)
