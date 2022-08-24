@@ -163,17 +163,33 @@ export default `;;wasm
   (param $a f64)
   (param $b f64)
   (result i32)
-  (select
-    (f64.eq
-      (local.get $a)
-      (local.get $b))
-    (i64.eq
-      (i64.reinterpret_f64
-        (local.get $a))
-      (i64.reinterpret_f64
-        (local.get $b)))
+  (local $result i32)
+  (if
     (call $is_number
-      (local.get $a))))
+      (local.get $a))
+    (then
+      (local.set $result
+        (f64.eq
+          (local.get $a)
+          (local.get $b)))))
+  (if
+    (call $is_obj
+      (local.get $a))
+    (then
+      (local.set $result
+        (call $strCmp
+          (call $as_obj
+            (local.get $a))
+          (call $as_obj
+            (local.get $b)))))
+    (else
+      (local.set $result
+        (i64.eq
+          (i64.reinterpret_f64
+            (local.get $a))
+          (i64.reinterpret_f64
+            (local.get $b))))))
+  (local.get $result))
 (func $print_value
   (param $v f64)
   (local $ptr i32)
