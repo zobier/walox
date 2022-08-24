@@ -5,15 +5,13 @@ import { getUtil } from './util';
 
 wabt()
   .then(async (wabt) => {
-    const module = await WebAssembly.compile(
-      wabt
-        .parseWat('inline', moduleSrc, {
-          multi_value: true,
-        })
-        .toBinary({
-          write_debug_names: true,
-        }).buffer,
-    );
+    const module = wabt
+      .parseWat('inline', moduleSrc, {
+        multi_value: true,
+      })
+      .toBinary({
+        write_debug_names: true,
+      }).buffer;
     const mem = new WebAssembly.Memory({ initial: 1 });
     const utilities = getUtil(mem.buffer);
     const importObject = {
@@ -22,7 +20,7 @@ wabt()
       },
       util: utilities,
     };
-    const instance = await WebAssembly.instantiate(module, importObject);
+    const { instance } = await WebAssembly.instantiate(module, importObject);
     console.log('--');
     const memArray = new Uint32Array(mem.buffer);
     const source = Uint32Array.from(
