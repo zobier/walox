@@ -107,6 +107,14 @@ export default `;;wasm
         (local.get $v))
       (i64.const 1))
     (global.get $TRUE)))
+(func $bool_val
+  (param $b i32)
+  (result f64)
+  (f64.reinterpret_i64
+    (select
+      (global.get $TRUE)
+      (global.get $FALSE)
+      (local.get $b))))
 (func $as_bool
   (param $v f64)
   (result i32)

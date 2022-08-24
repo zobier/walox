@@ -112,6 +112,16 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (if
         (i32.eq
           (local.get $code)
+          (global.get $OP_NOT))
+        (then
+          (call $push
+            (call $bool_val
+              (i32.eqz
+                (call $as_bool
+                  (call $pop)))))))
+      (if
+        (i32.eq
+          (local.get $code)
           (global.get $OP_NEGATE))
         (then
           (call $push

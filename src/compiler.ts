@@ -73,6 +73,7 @@ ${Object.entries({
   '$OP_DIVIDE': '$PREC_FACTOR',
   '$OP_MULTIPLY': '$PREC_FACTOR',
   '$OP_NEGATE': '$PREC_UNARY',
+  '$OP_NOT': '$PREC_NONE',
 }).map(([op, prec]) => `;;wasm
     (if
       (i32.eq
@@ -194,6 +195,7 @@ ${Object.entries({
   '$TOKEN_PLUS': '$OP_ADD',
   '$TOKEN_SLASH': '$OP_DIVIDE',
   '$TOKEN_STAR': '$OP_MULTIPLY',
+  '$TOKEN_BANG': '$OP_NOT',
 }).map(([token, op]) => `;;wasm
         (if
           (i32.eq
