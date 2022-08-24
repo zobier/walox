@@ -10,7 +10,7 @@ export default `;;wasm
       (f64.const 1.2)))
   (call $write_chunk
     (global.get $OP_RETURN))
-  (call $dissasemble)
+  ;; (call $dissasemble)
   (call $interpret)
   )
 `;

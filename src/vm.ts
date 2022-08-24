@@ -15,6 +15,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (local $result i32)
   (local.set $ip
     (i32.const 0))
+  (call $init_stack)
   (block $out
     (loop $run
       (local.set $code
@@ -24,8 +25,23 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (if
         (i32.eq
           (local.get $code)
+          (global.get $OP_CONSTANT))
+        (then
+          (call $push
+            (call $get_value
+              (i32.load8_u
+                (call $get_codeptr
+                  (local.tee $ip
+                    (i32.add
+                      (local.get $ip)
+                      (i32.const 1)))))))))
+      (if
+        (i32.eq
+          (local.get $code)
           (global.get $OP_RETURN))
         (then
+          (call $logDouble
+            (call $pop))
           (local.set $result
             (global.get $INTERPRET_OK))
           (br $out)))
