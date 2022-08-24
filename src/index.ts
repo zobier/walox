@@ -6,6 +6,7 @@ import main from './main';
 import memory from './memory';
 import util, { getUtil } from './util';
 import value from './value';
+import vm, { INTERPRET_RESULT } from './vm';
 
 wabt().then(async (wabt) => {
   const module = await WebAssembly.compile(
@@ -21,6 +22,7 @@ wabt().then(async (wabt) => {
           ${chunk}
           ${value}
           ${debug}
+          ${vm}
           ${main}
           (export "main"
             (func $main)))`
@@ -38,8 +40,9 @@ wabt().then(async (wabt) => {
   };
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
-  (instance.exports.main as Function)();
+  const result = (instance.exports.main as Function)();
   utilities.hexDump(0, 64);
+  console.log(INTERPRET_RESULT[result]);
 }).catch(e => {
   console.error(e);
 });

@@ -1,5 +1,12 @@
 import { OP_CODES } from './chunk';
 
+export const enumToGlobals = (e: object) => Object.keys(e)
+  .filter(key => isNaN(Number(key)))
+  .map(op => `;;wasm
+(global $${op} i32
+  (i32.const ${e[op as keyof typeof e]}))`
+  ).join('\n');
+
 export const getUtil = (buffer: ArrayBuffer) => ({
   hexDump(ptr: number, len: number) {
     const padHex = (num: number, len = 2) =>
@@ -19,7 +26,7 @@ export const getUtil = (buffer: ArrayBuffer) => ({
         const ascii = vals
           ?.reduce((str, val) =>
             str + String.fromCharCode(parseInt(val, 16)), '')
-            .replace(/[\x00-\x1f]/g, '.');
+          .replace(/[\x00-\x1f]/g, '.');
 
         return padHex(i * 16, 6) +
           ' ' +

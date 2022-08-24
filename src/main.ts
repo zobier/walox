@@ -1,5 +1,6 @@
 export default `;;wasm
 (func $main
+  (result i32)
   (call $init_chunk)
   (call $init_value_array)
   (call $write_chunk
@@ -9,5 +10,7 @@ export default `;;wasm
       (f64.const 1.2)))
   (call $write_chunk
     (global.get $OP_RETURN))
-  (call $dissasemble))
+  (call $dissasemble)
+  (call $interpret)
+  )
 `;

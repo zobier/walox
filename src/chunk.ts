@@ -1,15 +1,12 @@
+import { enumToGlobals } from './util';
+
 export enum OP_CODES {
   OP_CONSTANT = 1,
   OP_RETURN,
 }
 
 export default `;;wasm
-${Object.keys(OP_CODES)
-    .filter(key => isNaN(Number(key)))
-    .map(op => `;;wasm
-(global $${op} i32
-  (i32.const ${OP_CODES[op as keyof typeof OP_CODES]}))`
-    ).join('\n')}
+${enumToGlobals(OP_CODES)}
 (; typedef struct {
   i32 count;
   i32 capacity;
@@ -39,26 +36,31 @@ ${Object.keys(OP_CODES)
       (local.get $capacity)))
   (global.set $chunk
     (local.get $this)))
+(func $get_codeptr
+  (param $i i32) ;; todo: bounds check this
+  (result i32)
+  (local $this i32)
+  (local.set $this
+    (global.get $chunk))
+  (i32.add
+    (i32.load
+      (i32.add
+        (local.get $this)
+        (i32.const 8))) ;; *code
+    (local.get $i)))
 (func $write_chunk
   (param $code i32)
   ;; todo: realloc if count > capacity
   (local $this i32)
   (local $count i32)
-  (local $codeptr i32)
   (local.set $this
     (global.get $chunk))
   (local.set $count
     (i32.load
       (local.get $this)))
-  (local.set $codeptr
-    (i32.add
-      (i32.load
-        (i32.add
-          (local.get $this)
-          (i32.const 8))) ;; *code
-      (local.get $count)))
   (i32.store8
-    (local.get $codeptr)
+    (call $get_codeptr
+      (local.get $count))
     (local.get $code))
   (i32.store
     (local.get $this) ;; count
