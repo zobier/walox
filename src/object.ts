@@ -8,15 +8,51 @@ export default `;;wasm
 (; struct ObjString {
   i32 OBJ_TYPE;
   i32 *chars;
+  i32 hash;
 } ;)
 ${enumToGlobals(OBJ_TYPE)}
+(func $hash
+  (param $charptr i32)
+  (result i32)
+  (local $len i32)
+  (local $i i32)
+  (local $result i32)
+  (local.set $len
+    (call $get_len
+      (local.get $charptr)))
+  (local.set $i
+    (i32.const 0))
+  (local.set $result
+    (i32.const 2166136261))
+  (loop $hash
+    (local.set $result
+      (i32.xor
+        (local.get $result)
+        (i32.load
+          (i32.add
+            (local.get $charptr)
+            (i32.mul
+              (local.get $i)
+              (i32.const 4))))))
+    (local.set $result
+      (i32.mul
+        (local.get $result)
+        (i32.const 16777619)))
+    (br_if $hash
+      (i32.lt_u
+        (local.tee $i
+          (i32.add
+            (local.get $i)
+            (i32.const 1)))
+        (local.get $len))))
+  (local.get $result))
 (func $new_string
   (param $charptr i32)
   (result i32)
   (local $ptr i32)
   (local.set $ptr
     (call $alloc
-      (i32.const 2)))
+      (i32.const 3)))
   (i32.store
     (local.get $ptr)
     (global.get $OBJ_STRING))
@@ -25,6 +61,12 @@ ${enumToGlobals(OBJ_TYPE)}
       (local.get $ptr)
       (i32.const 4)) ;; *chars
     (local.get $charptr))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 8)) ;; hash
+    (call $hash
+      (local.get $charptr)))
   (local.get $ptr))
 (func $is_string
   (param $v f64)
@@ -45,6 +87,14 @@ ${enumToGlobals(OBJ_TYPE)}
       (call $as_obj
         (local.get $v))
       (i32.const 4)))) ;; *chars
+(func $get_hash
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 8)))) ;; hash
 (func $mem_copy
   (param $from i32)
   (param $to i32)
