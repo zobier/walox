@@ -1,6 +1,8 @@
 import { toHex } from "./common";
 
 export default `;;wasm
+(global $SIGN_BIT i64
+  (i64.const 0x8000000000000000))
 (global $QNAN i64
   (i64.const 0x7ffc000000000000))
 (global $NIL i64
@@ -122,6 +124,41 @@ export default `;;wasm
     (i64.reinterpret_f64
       (local.get $v))
     (global.get $TRUE)))
+(func $is_obj
+  (param $v f64)
+  (result i32)
+  (i64.eq
+    (i64.and
+      (i64.reinterpret_f64
+        (local.get $v))
+      (i64.or
+        (global.get $SIGN_BIT)
+        (global.get $QNAN)))
+    (i64.or
+      (global.get $SIGN_BIT)
+      (global.get $QNAN))))
+(func $obj_val
+  (param $ptr i32)
+  (result f64)
+  (f64.reinterpret_i64
+    (i64.or
+      (i64.extend_i32_u
+        (local.get $ptr))
+      (i64.or
+        (global.get $SIGN_BIT)
+        (global.get $QNAN)))))
+(func $as_obj
+  (param $v f64)
+  (result i32)
+  (i32.wrap_i64
+    (i64.and
+      (i64.reinterpret_f64
+        (local.get $v))
+      (i64.xor
+        (i64.or
+          (global.get $SIGN_BIT)
+          (global.get $QNAN))
+        (i64.const -1)))))
 (func $equal
   (param $a f64)
   (param $b f64)
@@ -139,6 +176,7 @@ export default `;;wasm
       (local.get $a))))
 (func $print_value
   (param $v f64)
+  (local $ptr i32)
   (if
     (call $is_bool
       (local.get $v))
@@ -151,6 +189,17 @@ export default `;;wasm
       (local.get $v))
     (then
       (call $logNil)))
+  (if
+    (call $is_obj
+      (local.get $v))
+    (then
+      (local.set $ptr
+        (call $as_obj
+          (local.get $v)))
+      (call $logString32
+        (local.get $ptr)
+        (call $get_len
+          (local.get $ptr)))))
   (if
     (call $is_number
       (local.get $v))

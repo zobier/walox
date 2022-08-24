@@ -4,6 +4,7 @@ import compiler from './compiler';
 import debug from './debug';
 import main from './main';
 import memory from './memory';
+import object from './object';
 import scanner from './scanner';
 import stack from './stack';
 import util from './util';
@@ -21,6 +22,7 @@ ${chunk}
 ${value}
 ${debug}
 ${scanner}
+${object}
 ${compiler}
 ${stack}
 ${vm}

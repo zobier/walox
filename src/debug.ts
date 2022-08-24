@@ -24,7 +24,7 @@ export default `;;wasm
         (local.get $code)
         (global.get $OP_CONSTANT))
       (then
-        (call $logDouble
+        (call $print_value
           (call $get_value
             (i32.load8_u
               (call $get_codeptr

@@ -40,6 +40,10 @@ export const getUtil = (buffer: ArrayBuffer) => ({
     );
     console.log(str);
   },
+  logString32(ptr: number, len: number) {
+    const str = String.fromCodePoint(...Array.from(new Uint32Array(buffer, ptr, len)));
+    console.log(str);
+  },
   logChar(char: number) {
     console.log(String.fromCharCode(char));
   },
@@ -81,6 +85,9 @@ export default `;;wasm
     (param i32 i32)))
 (import "util" "logString"
   (func $logString
+    (param i32 i32)))
+(import "util" "logString32"
+  (func $logString32
     (param i32 i32)))
 (import "util" "logChar"
   (func $logChar

@@ -25,8 +25,8 @@ wabt().then(async (wabt) => {
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
   const memArray = new Uint8Array(mem.buffer);
-  const source = new TextEncoder().encode(`(-1 + 2) * 3 - -4`);
-  const len = new Uint32Array([source.length]);
+  const source = new TextEncoder().encode(`"foo"`);
+  const len = new Uint32Array([Math.ceil(source.length / 4) * 4]);
   memArray.set(len)
   memArray.set(source, 4);
   const result = (instance.exports.main as Function)();

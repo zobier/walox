@@ -137,6 +137,23 @@ ${Object.entries({
                 (local.get $start)
                 (local.get $len))))
           (br $run)))
+      (if
+        (i32.eq
+          (local.get $token)
+          (global.get $TOKEN_STRING))
+        (then
+          (call $write_chunk
+            (global.get $OP_CONSTANT))
+          (call $write_chunk
+            (call $write_value_array
+              (call $copyString
+                (i32.add
+                  (local.get $start)
+                  (i32.const 1))
+                (i32.sub
+                  (local.get $len)
+                  (i32.const 2)))))
+          (br $run)))
 ${Object.entries({
   '$TOKEN_NIL': '$OP_NIL',
   '$TOKEN_TRUE': '$OP_TRUE',
