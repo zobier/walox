@@ -5,6 +5,7 @@ import debug from './debug';
 import main from './main';
 import memory from './memory';
 import util, { getUtil } from './util';
+import value from './value';
 
 wabt().then(async (wabt) => {
   const module = await WebAssembly.compile(
@@ -18,6 +19,7 @@ wabt().then(async (wabt) => {
           ${util} ;; imports must occur before all non-import definitions
           ${memory}
           ${chunk}
+          ${value}
           ${debug}
           ${main}
           (export "main"
@@ -37,7 +39,7 @@ wabt().then(async (wabt) => {
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
   (instance.exports.main as Function)();
-  utilities.hexDump(0, 16);
+  utilities.hexDump(0, 64);
 }).catch(e => {
   console.error(e);
 });

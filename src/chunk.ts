@@ -1,6 +1,6 @@
 export enum OP_CODES {
-  OP_RETURN = 1,
-  OP_FOO,
+  OP_CONSTANT = 1,
+  OP_RETURN,
 }
 
 export default `;;wasm

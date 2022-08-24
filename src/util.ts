@@ -9,7 +9,8 @@ export const getUtil = (buffer: ArrayBuffer) => ({
     const hex = Array.from(i32)
       .map(n =>
         padHex(n, 8)
-          .match(/../g))
+          .match(/../g)
+          ?.reverse())
       .flat()
       .join('')
       .match(/.{32}/g)
@@ -17,7 +18,8 @@ export const getUtil = (buffer: ArrayBuffer) => ({
         const vals = row.match(/../g);
         const ascii = vals
           ?.reduce((str, val) =>
-            str + String.fromCharCode(parseInt(val, 16)), '');
+            str + String.fromCharCode(parseInt(val, 16)), '')
+            .replace(/[\x00-\x1f]/g, '.');
 
         return padHex(i * 16, 6) +
           ' ' +
@@ -65,6 +67,9 @@ export default `;;wasm
 (import  "util"  "logNum"
   (func  $logNum
     (param  i32)))
+(import  "util"  "logNum"
+  (func  $logDouble
+    (param  f64)))
 (import  "util"  "logOpCode"
   (func  $logOpCode
     (param  i32)))

@@ -22,8 +22,10 @@ compiler.watch({
     },
   } = stats;
   Object.keys(assets).map((asset) => {
-    const filename = require.resolve(path.join('..', 'dist', asset));
-    delete require.cache[filename];
-    require(filename);
+    if (!asset.endsWith('.html')) {
+      const filename = require.resolve(path.join('..', 'dist', asset));
+      delete require.cache[filename];
+      require(filename);
+    }
   });
 });

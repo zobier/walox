@@ -25,6 +25,20 @@ export default `;;wasm
           (local.get $i))))
     (call $logOpCode
       (local.get $code))
+    (if
+      (i32.eq
+        (local.get $code)
+        (global.get $OP_CONSTANT))
+      (then
+        (call $logDouble
+          (call $get_value
+            (i32.load8_u
+              (i32.add
+                (local.get $codeptr)
+                (local.tee $i
+                  (i32.add
+                    (local.get $i)
+                    (i32.const 1)))))))))
     (i32.lt_s
       (local.tee $i
         (i32.add

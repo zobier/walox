@@ -1,8 +1,12 @@
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
-var ProgressPlugin = require('webpack/lib/ProgressPlugin');
+const ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
 module.exports = {
   entry: './src/index.ts',
+  devServer: {
+    static: './dist',
+  },
   devtool: 'source-map',
   mode: 'none',
   module: {
@@ -18,10 +22,18 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   plugins: [
-    new ProgressPlugin()
-  ],  
+    new HtmlWebpackPlugin({
+      title: 'walox',
+    }),
+    new ProgressPlugin(),
+  ],
   resolve: {
     extensions: ['.ts', '.js'],
+    fallback: {
+      crypto: false,
+      fs: false,
+      path: false,
+    },
   },
-  target: 'node',
+  target: process.env.TARGET,
 };
