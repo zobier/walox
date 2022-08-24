@@ -57,6 +57,9 @@ ${indent(watSwitch(
         (f64.reinterpret_i64
           (global.get $FALSE)))
       (br $break)`,
+    [OP_CODES.OP_POP]: `;;wasm
+      (call $pop)
+      (br $break)`,
     [OP_CODES.OP_NOT]: `;;wasm
       (call $push
         (call $bool_val

@@ -5,6 +5,7 @@ export enum OP_CODES {
   OP_NIL,
   OP_TRUE,
   OP_FALSE,
+  OP_POP,
   OP_NOT_EQUAL,
   OP_EQUAL,
   OP_GREATER,

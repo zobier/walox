@@ -168,6 +168,12 @@ ${indent(watSwitch(
 (func $expression
   (call $parse_precedence
     (global.get $PREC_ASSIGNMENT)))
+(func $expression_statement
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_SEMICOLON))
+  (call $write_chunk
+    (global.get $OP_POP)))
 (func $print_statement
   (call $expression)
   (call $consume
@@ -181,7 +187,9 @@ ${indent(watSwitch(
     (call $match_token
       (global.get $TOKEN_PRINT))
     (then
-      (call $print_statement))))
+      (call $print_statement))
+    (else
+      (call $expression_statement))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))
