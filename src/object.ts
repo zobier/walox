@@ -140,6 +140,23 @@ ${enumToGlobals(OBJ_TYPE)}
       (call $as_obj
         (local.get $v))
       (i32.const 8)))) ;; hash
+(func $get_arity
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 4)))) ;; arity
+(func $set_arity
+  (param $v f64)
+  (param $arity i32)
+  (i32.store
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 4)) ;; arity
+    (local.get $arity)))
 (func $get_chunk
   (param $v f64)
   (result i32)
@@ -148,6 +165,23 @@ ${enumToGlobals(OBJ_TYPE)}
       (call $as_obj
         (local.get $v))
       (i32.const 8)))) ;; *chunk
+(func $get_name
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 12)))) ;; name
+(func $set_name
+  (param $v f64)
+  (param $name i32)
+  (i32.store
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 12)) ;; name
+    (local.get $name)))
 (func $copy_string
   (param $start i32)
   (param $len i32)

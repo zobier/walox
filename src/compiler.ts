@@ -292,6 +292,12 @@ ${indent(
     `;;wasm
     (global.get $previous)`,
     [
+      [
+        TOKENS.TOKEN_LEFT_PAREN,
+        `;;wasm
+        (call $call)
+        (br $break)`,
+      ],
       [TOKENS.TOKEN_PLUS, ''],
       [TOKENS.TOKEN_MINUS, ''],
       [TOKENS.TOKEN_STAR, ''],
@@ -429,6 +435,28 @@ ${indent(
         (call $get_chunk
           (call $get_function))
         (local.get $global)))))
+(func $arguments_list
+  (result i32)
+  (local $arg_count i32)
+  (local.set $arg_count
+    (i32.const 0))
+  (if
+    (i32.eqz
+      (call $check
+        (global.get $TOKEN_RIGHT_PAREN)))
+    (then
+      (loop $arguments
+        (call $expression)
+        (local.set $arg_count
+          (i32.add
+            (local.get $arg_count)
+            (i32.const 1)))
+        (br_if $arguments
+          (call $match_token
+            (global.get $TOKEN_COMMA))))))
+  (call $consume
+    (global.get $TOKEN_RIGHT_PAREN))
+  (local.get $arg_count))
 (func $and
   (local $end_jump i32)
   (local.set $end_jump
@@ -482,9 +510,34 @@ ${indent(
 (func $function
   (local $function f64)
   (call $init_compiler)
+  (local.set $function
+    (call $get_function))
+  (call $set_name
+    (local.get $function)
+    (call $as_obj
+      (call $copy_string
+        (global.get $prev_start)
+        (global.get $prev_len))))
   (call $begin_scope)
   (call $consume
     (global.get $TOKEN_LEFT_PAREN))
+  (if
+    (i32.eqz
+      (call $check
+        (global.get $TOKEN_RIGHT_PAREN)))
+    (then
+      (loop $parameters
+        (call $set_arity
+          (local.get $function)
+          (i32.add
+            (call $get_arity
+              (local.get $function))
+            (i32.const 1))) ;; todo: check arity <= 255
+        (call $define_variable
+          (call $parse_variable))
+        (br_if $parameters
+          (call $match_token
+            (global.get $TOKEN_COMMA))))))
   (call $consume
     (global.get $TOKEN_RIGHT_PAREN))
   (call $consume
@@ -1028,6 +1081,15 @@ ${indent(
   2,
 )}
   )
+(func $call
+  (call $write_chunk
+    (call $get_chunk
+      (call $get_function))
+    (global.get $OP_CALL))
+  (call $write_chunk
+    (call $get_chunk
+      (call $get_function))
+    (call $arguments_list)))
 (func $literal
   (local $literal i32)
   (local.set $literal
