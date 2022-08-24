@@ -28,6 +28,20 @@ ${watSwitch(
   `;;wasm
   (local.get $code)`,
   [
+    [OP_CODES.OP_GET_LOCAL, ''],
+    [
+      OP_CODES.OP_SET_LOCAL,
+      `;;wasm
+      (call $logNum
+        (i32.load8_u
+          (call $get_codeptr
+            (local.get $chunk)
+            (local.tee $i
+              (i32.add
+                (local.get $i)
+                (i32.const 1))))))
+      (br $break)`,
+    ],
     [OP_CODES.OP_DEFINE_GLOBAL, ''],
     [OP_CODES.OP_GET_GLOBAL, ''],
     [OP_CODES.OP_SET_GLOBAL, ''],
