@@ -17,6 +17,10 @@ export enum PRECEDENCE {
 
 export default `;;wasm
 ${enumToGlobals(PRECEDENCE)}
+(; typedef struct {
+  i32 *name
+  i32 depth
+} Local ;)
 (global $previous
   (mut i32)
   (i32.const 0))
@@ -33,6 +37,15 @@ ${enumToGlobals(PRECEDENCE)}
   (mut i32)
   (i32.const 0))
 (global $cur_len
+  (mut i32)
+  (i32.const 0))
+(global $local_count
+  (mut i32)
+  (i32.const 0))
+(global $scope_depth
+  (mut i32)
+  (i32.const 0))
+(global $locals
   (mut i32)
   (i32.const 0))
 (func $advance
@@ -187,20 +200,74 @@ ${indent(
     (call $copy_string
       (global.get $prev_start)
       (global.get $prev_len))))
+(func $add_local
+  (param $nameptr i32)
+  (local $localptr i32)
+  (local.set $localptr
+    (i32.add
+      (global.get $locals)
+      (i32.mul
+        (global.get $local_count) ;; should check this is < 256
+        (i32.const 2))))
+  (i32.store
+    (local.get $localptr)
+    (local.get $nameptr))
+  (i32.store
+    (i32.add
+      (local.get $localptr)
+      (i32.const 1))
+    (global.get $scope_depth))
+  (global.set $local_count
+    (i32.add
+      (global.get $local_count)
+      (i32.const 1))))
+(func $declare_variable
+  (call $add_local ;; todo: check if name already declared at $scope_depth
+    (call $as_obj
+      (call $copy_string
+        (global.get $prev_start)
+        (global.get $prev_len)))))
 (func $parse_variable
   (result i32)
   (call $consume
     (global.get $TOKEN_IDENTIFIER))
+  (if
+    (i32.gt_u
+      (global.get $scope_depth)
+      (i32.const 0))
+    (then
+      (call $declare_variable)
+      (return
+        (i32.const 0))))
   (call $identifier_constant))
 (func $define_variable
   (param $global i32)
-  (call $write_chunk
-    (global.get $OP_DEFINE_GLOBAL))
-  (call $write_chunk
-    (local.get $global)))
+  (if
+    (i32.eqz
+      (global.get $scope_depth))
+    (then
+      (call $write_chunk
+        (global.get $OP_DEFINE_GLOBAL))
+      (call $write_chunk
+        (local.get $global)))))
 (func $expression
   (call $parse_precedence
     (global.get $PREC_ASSIGNMENT)))
+(func $block
+  (block $out
+    (loop $block_not_eof
+      (if
+        (i32.or
+          (call $match_token
+            (global.get $TOKEN_RIGHT_BRACE))
+          (call $match_token
+            (global.get $TOKEN_EOF)))
+        (then
+          (br $out)))
+      (call $declaration)
+      (br $block_not_eof)))
+  (call $consume
+    (global.get $TOKEN_RIGHT_BRACE)))
 (func $var_declaration
   (local $global i32)
   (local.set $global
@@ -244,7 +311,15 @@ ${indent(
     (then
       (call $print_statement))
     (else
-      (call $expression_statement))))
+      (if
+        (call $match_token
+          (global.get $TOKEN_LEFT_BRACE))
+        (then
+          (call $begin_scope)
+          (call $block)
+          (call $end_scope))
+        (else
+          (call $expression_statement))))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))
@@ -394,10 +469,23 @@ ${indent(
   2,
 )}
   )
+(func $begin_scope
+  (global.set $scope_depth
+    (i32.add
+      (global.get $scope_depth)
+      (i32.const 1))))
+(func $end_scope
+  (global.set $scope_depth
+    (i32.sub
+      (global.get $scope_depth)
+      (i32.const 1))))
 (func $compile
   (param $srcptr i32)
   (call $init_scanner
     (local.get $srcptr))
+  (global.set $locals
+    (call $alloc
+      (i32.const 512)))
   (call $advance)
   (block $out
     (loop $not_eof
