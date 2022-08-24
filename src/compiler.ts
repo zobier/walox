@@ -161,6 +161,25 @@ typedef struct {
     (else
       (call $advance)
       (i32.const 1))))
+(func $emit_byte
+  (param $b i32)
+  (call $write_chunk
+    (call $get_chunk
+      (call $get_function))
+    (local.get $b)))
+(func $emit_bytes
+  (param $a i32)
+  (param $b i32)
+  (local $chunk i32)
+  (local.set $chunk
+    (call $get_chunk
+      (call $get_function)))
+  (call $write_chunk
+    (local.get $chunk)
+    (local.get $a))
+  (call $write_chunk
+    (local.get $chunk)
+    (local.get $b)))
 (func $get_precedence
   (param $operator i32)
   (result i32)
@@ -434,13 +453,8 @@ ${indent(
     (i32.eqz
       (call $get_scope_depth))
     (then
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
-        (global.get $OP_DEFINE_GLOBAL))
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_bytes
+        (global.get $OP_DEFINE_GLOBAL)
         (local.get $global)))))
 (func $arguments_list
   (result i32)
@@ -469,9 +483,7 @@ ${indent(
   (local.set $end_jump
     (call $emit_jump
       (global.get $OP_JUMP_IF_FALSE)))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP))
   (call $parse_precedence
     (global.get $PREC_AND))
@@ -488,9 +500,7 @@ ${indent(
       (global.get $OP_JUMP)))
   (call $patch_jump
     (local.get $else_jump))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP))
   (call $parse_precedence
     (global.get $PREC_OR))
@@ -552,13 +562,8 @@ ${indent(
   (call $block)
   (local.set $function
     (call $end_compiler))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
-    (global.get $OP_CONSTANT))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_bytes
+    (global.get $OP_CONSTANT)
     (call $write_value_array
       (local.get $function))))
 (func $fun_declaration
@@ -578,9 +583,7 @@ ${indent(
     (then
       (call $expression))
     (else
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (global.get $OP_NIL))))
   (call $consume
     (global.get $TOKEN_SEMICOLON))
@@ -590,24 +593,15 @@ ${indent(
   (call $expression)
   (call $consume
     (global.get $TOKEN_SEMICOLON))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP)))
 (func $emit_jump
   (param $instruction i32)
   (result i32)
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (local.get $instruction))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
-    (i32.const 0xff))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_bytes
+    (i32.const 0xff)
     (i32.const 0xff))
   (i32.sub
     (i32.load
@@ -654,9 +648,7 @@ ${indent(
   (local.set $then_jump
     (call $emit_jump
       (global.get $OP_JUMP_IF_FALSE)))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP))
   (call $statement)
   (local.set $else_jump
@@ -664,9 +656,7 @@ ${indent(
       (global.get $OP_JUMP)))
   (call $patch_jump
     (local.get $then_jump))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP))
   (if
     (call $match_token
@@ -678,9 +668,7 @@ ${indent(
 (func $emit_loop
   (param $loop_start i32)
   (local $jump i32)
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_LOOP))
   (local.set $jump
     (i32.add
@@ -690,15 +678,11 @@ ${indent(
             (call $get_function))) ;; count
         (local.get $loop_start))
       (i32.const 2)))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (i32.and
       (local.get $jump)
       (i32.const 0xff)))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (i32.and
       (i32.shr_u
         (local.get $jump)
@@ -719,18 +703,14 @@ ${indent(
   (local.set $exit_jump
     (call $emit_jump
       (global.get $OP_JUMP_IF_FALSE)))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP))
   (call $statement)
   (call $emit_loop
     (local.get $loop_start))
   (call $patch_jump
     (local.get $exit_jump))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_POP)))
 (func $for_statement
   (local $loop_start i32)
@@ -769,9 +749,7 @@ ${indent(
       (local.set $exit_jump
         (call $emit_jump
           (global.get $OP_JUMP_IF_FALSE)))
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (global.get $OP_POP))))
   (if
     (i32.eqz
@@ -786,9 +764,7 @@ ${indent(
           (call $get_chunk
             (call $get_function)))) ;; count
       (call $expression)
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (global.get $OP_POP))
       (call $consume
         (global.get $TOKEN_RIGHT_PAREN))
@@ -808,18 +784,14 @@ ${indent(
     (then
       (call $patch_jump
         (local.get $exit_jump))
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (global.get $OP_POP))))
   (call $end_scope))
 (func $print_statement
   (call $expression)
   (call $consume
     (global.get $TOKEN_SEMICOLON))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (global.get $OP_PRINT)))
 (func $declaration
   (if
@@ -870,25 +842,15 @@ ${indent(
                     (else
                       (call $expression_statement))))))))))))
 (func $number
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
-    (global.get $OP_CONSTANT))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_bytes
+    (global.get $OP_CONSTANT)
     (call $write_value_array
       (call $stringToDouble
         (global.get $prev_start)
         (global.get $prev_len)))))
 (func $string
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
-    (global.get $OP_CONSTANT))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_bytes
+    (global.get $OP_CONSTANT)
     (call $write_value_array
       (call $copy_string
         (i32.add
@@ -928,18 +890,12 @@ ${indent(
       (global.get $TOKEN_EQUAL)) ;; todo: check precedence <= PREC_ASSIGNMENT
     (then
       (call $expression)
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (local.get $set_op)))
     (else
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (local.get $get_op))))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_byte
     (local.get $arg)))
 (func $grouping
   (call $expression)
@@ -959,18 +915,14 @@ ${indent(
       [
         TOKENS.TOKEN_MINUS,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NEGATE))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_BANG,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NOT))
         (br $break)`,
       ],
@@ -996,90 +948,70 @@ ${indent(
       [
         TOKENS.TOKEN_PLUS,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_ADD))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_MINUS,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_SUBTRACT))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_STAR,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_MULTIPLY))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_SLASH,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_DIVIDE))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_BANG_EQUAL,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NOT_EQUAL))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_EQUAL_EQUAL,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_EQUAL))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_GREATER,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_GREATER))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_GREATER_EQUAL,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NOT_LESS))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_LESS,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_LESS))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_LESS_EQUAL,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NOT_GREATER))
         (br $break)`,
       ],
@@ -1089,13 +1021,8 @@ ${indent(
 )}
   )
 (func $call
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
-    (global.get $OP_CALL))
-  (call $write_chunk
-    (call $get_chunk
-      (call $get_function))
+  (call $emit_bytes
+    (global.get $OP_CALL)
     (call $arguments_list)))
 (func $literal
   (local $literal i32)
@@ -1109,27 +1036,21 @@ ${indent(
       [
         TOKENS.TOKEN_FALSE,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_FALSE))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_TRUE,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_TRUE))
         (br $break)`,
       ],
       [
         TOKENS.TOKEN_NIL,
         `;;wasm
-        (call $write_chunk
-          (call $get_chunk
-            (call $get_function))
+        (call $emit_byte
           (global.get $OP_NIL))
         (br $break)`,
       ],
@@ -1164,9 +1085,7 @@ ${indent(
                     (i32.const 8)))
                 (i32.const 4))) ;; depth
             (call $get_scope_depth))))
-      (call $write_chunk
-        (call $get_chunk
-          (call $get_function))
+      (call $emit_byte
         (global.get $OP_POP))
       (call $set_local_count
         (i32.sub
@@ -1178,9 +1097,7 @@ ${indent(
   (local $function f64)
   (local.set $function
     (call $get_function))
-  (call $write_chunk
-    (call $get_chunk
-      (local.get $function))
+  (call $emit_byte
     (global.get $OP_RETURN))
   (global.set $compiler
     (call $get_enclosing))
