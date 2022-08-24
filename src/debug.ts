@@ -133,4 +133,24 @@ ${watSwitch(
   ],
 )}
   (local.get $i))
+(func $print_frame
+  (param $frameptr i32)
+  (local $i i32)
+  (local.set $i
+    (i32.load
+      (i32.add
+        (local.get $frameptr)
+        (i32.const 8)))) ;; *slot
+  (call $print_value
+    (f64.load
+      (local.get $i)))
+  (loop $loop
+    (br_if $loop
+      (i32.lt_s
+        (local.tee $i
+          (i32.add
+            (local.get $i)
+            (i32.const 8)))
+        (i32.load
+          (global.get $stack)))))) ;; *top_of_stack
 `;

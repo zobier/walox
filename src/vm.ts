@@ -99,9 +99,10 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (result f64)
   (f64.load
     (i32.add
-      (i32.add
-        (local.get $frameptr)
-        (i32.const 8)) ;; *slot
+      (i32.load
+        (i32.add
+          (local.get $frameptr)
+          (i32.const 8))) ;; *slot
       (i32.mul
         (local.get $i)
         (i32.const 8)))))
@@ -111,9 +112,10 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (param $v f64)
   (f64.store
     (i32.add
-      (i32.add
-        (local.get $frameptr)
-        (i32.const 8)) ;; *slot
+      (i32.load
+        (i32.add
+          (local.get $frameptr)
+          (i32.const 8))) ;; *slot
       (i32.mul
         (local.get $i)
         (i32.const 8)))
@@ -138,11 +140,13 @@ ${enumToGlobals(INTERPRET_RESULT)}
             (local.get $callee))
           (i32.const 0))
         (i32.sub
-          (i32.sub
-            (i32.load
-              (global.get $stack)) ;; *top_of_stack
-            (local.get $arg_count))
-          (i32.const 1))))
+          (i32.load
+            (global.get $stack)) ;; *top_of_stack
+          (i32.mul
+            (i32.add
+              (local.get $arg_count)
+              (i32.const 1))
+            (i32.const 8)))))
     (else
       (i32.const 0))))
 (func $interpret
