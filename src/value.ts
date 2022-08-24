@@ -20,13 +20,11 @@ export default `;;wasm
   (mut i32)
   (i32.const 0))
 (func $init_value_array
+  (param $capacity i32)
   (local $this i32)
-  (local $capacity i32)
   (local.set $this
     (call $alloc
       (i32.const 3)))
-  (local.set $capacity
-    (i32.const 32))
   (i32.store
     (i32.add
       (local.get $this)
@@ -37,7 +35,9 @@ export default `;;wasm
       (local.get $this)
       (i32.const 8)) ;; *values
     (call $alloc
-      (local.get $capacity)))
+      (i32.mul
+        (local.get $capacity)
+        (i32.const 4))))
   (global.set $value_array
     (local.get $this)))
 (func $get_valueptr

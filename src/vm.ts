@@ -18,7 +18,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (local $result i32)
   (call $compile
     (local.get $srcptr))
-  (call $dissasemble)
+  ;;(call $dissasemble)
   (local.set $ip
     (i32.const 0))
   (call $init_stack)
@@ -59,6 +59,28 @@ ${indent(watSwitch(
       (br $break)`,
     [OP_CODES.OP_POP]: `;;wasm
       (call $pop)
+      (br $break)`,
+    [OP_CODES.OP_GET_GLOBAL]: `;;wasm
+      (call $push
+        (call $table_get
+          (call $get_value
+            (i32.load8_u
+              (call $get_codeptr
+                (local.tee $ip
+                  (i32.add
+                    (local.get $ip)
+                    (i32.const 1))))))))
+      (br $break)`,
+    [OP_CODES.OP_DEFINE_GLOBAL]: `;;wasm
+      (call $table_set
+        (call $get_value
+          (i32.load8_u
+            (call $get_codeptr
+              (local.tee $ip
+                (i32.add
+                  (local.get $ip)
+                  (i32.const 1))))))
+        (call $pop))
       (br $break)`,
     [OP_CODES.OP_NOT]: `;;wasm
       (call $push

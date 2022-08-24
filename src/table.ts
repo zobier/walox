@@ -75,14 +75,17 @@ typedef struct {
         (call $get_entryptr
           (local.get $i)))
       (if
-        (i32.or
-          (i32.eq
-            (i32.load
-              (local.get $entryptr))
-            (i32.const 0)) ;; null??
-          (call $str_cmp
-            (call $get_string
-              (local.get $key))
+        (i32.eq
+          (i32.load
+            (local.get $entryptr))
+          (i32.const 0)) ;; null??
+        (then
+          (br $out)))
+      (if
+        (call $str_cmp
+          (call $get_string
+            (local.get $key))
+          (i32.load
             (local.get $entryptr)))
         (then
           (br $out)))

@@ -135,6 +135,9 @@ ${indent(watSwitch(
       [TOKENS.TOKEN_NIL]: `;;wasm
     (call $literal)
     (br $break)`,
+      [TOKENS.TOKEN_IDENTIFIER]: `;;wasm
+    (call $variable)
+    (br $break)`
     }), 2)} ;; default should be "expect expression" error
   (block $out
     (loop $infix
@@ -165,9 +168,42 @@ ${indent(watSwitch(
       }), 8)}
         (br $infix)))
   )
+(func $identifier_constant
+  (result i32)
+  (call $write_value_array
+    (call $copy_string
+      (global.get $prev_start)
+      (global.get $prev_len))))
+(func $parse_variable
+  (result i32)
+  (call $consume
+    (global.get $TOKEN_IDENTIFIER))
+  (call $identifier_constant))
+(func $define_variable
+  (param $global i32)
+  (call $write_chunk
+    (global.get $OP_DEFINE_GLOBAL))
+  (call $write_chunk
+    (local.get $global)))
 (func $expression
   (call $parse_precedence
     (global.get $PREC_ASSIGNMENT)))
+(func $var_declaration
+  (local $global i32)
+  (local.set $global
+    (call $parse_variable))
+  (if
+    (call $match_token
+      (global.get $TOKEN_EQUAL))
+    (then
+      (call $expression))
+    (else
+      (call $write_chunk
+        (global.get $OP_NIL))))
+  (call $consume
+    (global.get $TOKEN_SEMICOLON))
+  (call $define_variable
+    (local.get $global)))
 (func $expression_statement
   (call $expression)
   (call $consume
@@ -181,7 +217,13 @@ ${indent(watSwitch(
   (call $write_chunk
     (global.get $OP_PRINT)))
 (func $declaration
-  (call $statement))
+  (if
+    (call $match_token
+      (global.get $TOKEN_VAR))
+    (then
+      (call $var_declaration))
+    (else
+      (call $statement))))
 (func $statement
   (if
     (call $match_token
@@ -210,6 +252,11 @@ ${indent(watSwitch(
         (i32.sub
           (global.get $prev_len)
           (i32.const 2))))))
+(func $variable
+  (call $write_chunk
+    (global.get $OP_GET_GLOBAL))
+  (call $write_chunk
+    (call $identifier_constant)))
 (func $grouping
   (call $expression)
   (call $consume
@@ -323,7 +370,8 @@ ${indent(watSwitch(
           (global.get $TOKEN_EOF))
         (then
           (br $out)))
-      (call $declaration)))
+      (call $declaration)
+      (br $not_eof)))
   (call $write_chunk
     (global.get $OP_RETURN))
   )

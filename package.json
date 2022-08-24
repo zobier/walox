@@ -7,9 +7,9 @@
     "clean": "rm ./dist/*",
     "build": "TARGET=node webpack",
     "runts": "ts-node ./src/index",
-    "print": "ts-node ./scripts/printModule",
+    "print": "ts-node ./scripts/printModule > module.wat",
     "start": "TARGET=web webpack serve --open",
-    "test": "ts-node src/test/scanner.test",
+    "test": "ts-node src/test/table.test",
     "watch": "./scripts/watch.js"
   },
   "dependencies": {
