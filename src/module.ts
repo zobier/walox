@@ -16,7 +16,8 @@ export default `;;wasm
 (module
   (import "env" "memory"
     (memory 1))
-${indent(`
+${indent(
+  `
 ${util} ;; imports must occur before all non-import definitions
 ${memory}
 ${chunk}
@@ -29,7 +30,9 @@ ${stack}
 ${table}
 ${vm}
 ${main}
-`, 2)}
+`,
+  2,
+)}
   (export "main"
     (func $main)))
 `.replace(/\s*;;wasm/g, '');

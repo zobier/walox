@@ -2,24 +2,50 @@ import { charToHex, enumToGlobals, indent } from './common';
 
 export enum TOKENS {
   // Single-character tokens.
-  TOKEN_LEFT_PAREN = 1, TOKEN_RIGHT_PAREN,
-  TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,
-  TOKEN_COMMA, TOKEN_DOT, TOKEN_MINUS, TOKEN_PLUS,
-  TOKEN_SEMICOLON, TOKEN_SLASH, TOKEN_STAR,
+  TOKEN_LEFT_PAREN = 1,
+  TOKEN_RIGHT_PAREN,
+  TOKEN_LEFT_BRACE,
+  TOKEN_RIGHT_BRACE,
+  TOKEN_COMMA,
+  TOKEN_DOT,
+  TOKEN_MINUS,
+  TOKEN_PLUS,
+  TOKEN_SEMICOLON,
+  TOKEN_SLASH,
+  TOKEN_STAR,
   // One or two character tokens.
-  TOKEN_BANG, TOKEN_BANG_EQUAL,
-  TOKEN_EQUAL, TOKEN_EQUAL_EQUAL,
-  TOKEN_GREATER, TOKEN_GREATER_EQUAL,
-  TOKEN_LESS, TOKEN_LESS_EQUAL,
+  TOKEN_BANG,
+  TOKEN_BANG_EQUAL,
+  TOKEN_EQUAL,
+  TOKEN_EQUAL_EQUAL,
+  TOKEN_GREATER,
+  TOKEN_GREATER_EQUAL,
+  TOKEN_LESS,
+  TOKEN_LESS_EQUAL,
   // Literals.
-  TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
+  TOKEN_IDENTIFIER,
+  TOKEN_STRING,
+  TOKEN_NUMBER,
   // Keywords.
-  TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE,
-  TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_NIL, TOKEN_OR,
-  TOKEN_PRINT, TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
-  TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE,
+  TOKEN_AND,
+  TOKEN_CLASS,
+  TOKEN_ELSE,
+  TOKEN_FALSE,
+  TOKEN_FOR,
+  TOKEN_FUN,
+  TOKEN_IF,
+  TOKEN_NIL,
+  TOKEN_OR,
+  TOKEN_PRINT,
+  TOKEN_RETURN,
+  TOKEN_SUPER,
+  TOKEN_THIS,
+  TOKEN_TRUE,
+  TOKEN_VAR,
+  TOKEN_WHILE,
 
-  TOKEN_ERROR, TOKEN_EOF
+  TOKEN_ERROR,
+  TOKEN_EOF,
 }
 
 export default `;;wasm
@@ -215,7 +241,9 @@ ${Object.entries({
   '+': '$TOKEN_PLUS',
   '/': '$TOKEN_SLASH',
   '*': '$TOKEN_STAR',
-}).map(([char, token]) => `;;wasm
+})
+  .map(
+    ([char, token]) => `;;wasm
     (if
       (i32.eq
         (local.get $char)
@@ -224,13 +252,17 @@ ${Object.entries({
         (local.set $result
           (global.get ${token}))
         (br $out)))
-`).join('')}
+`,
+  )
+  .join('')}
 ${Object.entries({
   '!': '$TOKEN_BANG',
   '=': '$TOKEN_EQUAL',
   '<': '$TOKEN_LESS',
   '>': '$TOKEN_GREATER',
-}).map(([char, token]) => `;;wasm
+})
+  .map(
+    ([char, token]) => `;;wasm
     (if
       (i32.eq
         (local.get $char)
@@ -252,7 +284,9 @@ ${Object.entries({
             (local.set $result
               (global.get ${token}))))
         (br $out)))
-`).join('')}
+`,
+  )
+  .join('')}
     (if
       (i32.eq
         (local.get $char)
@@ -394,38 +428,41 @@ ${Object.entries({
             (i32.const 1)))
 ${Object.entries({
   '': {
-    'and': '$TOKEN_AND',
-    'class': '$TOKEN_CLASS',
-    'else': '$TOKEN_ELSE',
-    'if': '$TOKEN_IF',
-    'nil': '$TOKEN_NIL',
-    'or': '$TOKEN_OR',
-    'print': '$TOKEN_PRINT',
-    'return': '$TOKEN_RETURN',
-    'var': '$TOKEN_VAR',
-    'while': '$TOKEN_WHILE',
+    and: '$TOKEN_AND',
+    class: '$TOKEN_CLASS',
+    else: '$TOKEN_ELSE',
+    if: '$TOKEN_IF',
+    nil: '$TOKEN_NIL',
+    or: '$TOKEN_OR',
+    print: '$TOKEN_PRINT',
+    return: '$TOKEN_RETURN',
+    var: '$TOKEN_VAR',
+    while: '$TOKEN_WHILE',
   },
-  'f': {
-    'alse': '$TOKEN_FALSE',
-    'or': '$TOKEN_FOR',
-    'un': '$TOKEN_FUN',
+  f: {
+    alse: '$TOKEN_FALSE',
+    or: '$TOKEN_FOR',
+    un: '$TOKEN_FUN',
   },
-  't': {
-    'his': '$TOKEN_THIS',
-    'rue': '$TOKEN_TRUE',
+  t: {
+    his: '$TOKEN_THIS',
+    rue: '$TOKEN_TRUE',
   },
-}).map(([prefix, alternatives]) => {
-  const start = prefix ? `;;wasm
+})
+  .map(([prefix, alternatives]) => {
+    const start = prefix
+      ? `;;wasm
                   (i32.add
                     (local.get $start)
-                    (i32.const 4))` : `;;wasm
+                    (i32.const 4))`
+      : `;;wasm
                   (local.get $start)`;
-  const offset = prefix ? 8 : 4;
-  const cases = Object.entries(alternatives)
-    .map(([rest, token]) => {
-      const keyword = prefix + rest;
+    const offset = prefix ? 8 : 4;
+    const cases = Object.entries(alternatives)
+      .map(([rest, token]) => {
+        const keyword = prefix + rest;
 
-      return `;;wasm
+        return `;;wasm
         (block $check_${keyword}
           (if
             (i32.and
@@ -437,7 +474,11 @@ ${start})
                 (local.get $len)
                 (i32.const ${keyword.length})))
             (then
-${rest.slice(1).split('').map((c, i) => `;;wasm
+${rest
+  .slice(1)
+  .split('')
+  .map(
+    (c, i) => `;;wasm
               (if
                 (i32.ne
                   (i32.load
@@ -447,13 +488,18 @@ ${rest.slice(1).split('').map((c, i) => `;;wasm
                   (i32.const ${charToHex(c)}))
                 (then
                   (br $check_${keyword})))
-`).join('')}
+`,
+  )
+  .join('')}
               (local.set $result
                 (global.get ${token}))
               (br $out))))
-`}).join('');
+`;
+      })
+      .join('');
 
-  return prefix ? `;;wasm
+    return prefix
+      ? `;;wasm
         (if
           (i32.and
             (i32.eq
@@ -464,8 +510,10 @@ ${rest.slice(1).split('').map((c, i) => `;;wasm
               (local.get $len)
               (i32.const 1)))
           (then
-${indent(cases, 4)}))` : cases;
-}).join('')}
+${indent(cases, 4)}))`
+      : cases;
+  })
+  .join('')}
       (local.set $result
         (global.get $TOKEN_IDENTIFIER))
       (br $out)))

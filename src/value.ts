@@ -1,4 +1,4 @@
-import { toHex } from "./common";
+import { toHex } from './common';
 
 export default `;;wasm
 (global $SIGN_BIT i64

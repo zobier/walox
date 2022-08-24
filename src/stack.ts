@@ -65,4 +65,4 @@ export default `;;wasm
     (local.get $this)
     (local.get $top_of_stack))
   (local.get $value))
-`
+`;

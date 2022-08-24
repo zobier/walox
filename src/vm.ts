@@ -1,11 +1,11 @@
 import { enumToGlobals, indent, watSwitch } from './common';
-import { OP_CODES } from './chunk'
+import { OP_CODES } from './chunk';
 
 export enum INTERPRET_RESULT {
   INTERPRET_OK = 1,
   INTERPRET_COMPILE_ERROR,
   INTERPRET_RUNTIME_ERROR,
-};
+}
 
 export default `;;wasm
 ${enumToGlobals(INTERPRET_RESULT)}
@@ -28,11 +28,12 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (i32.load8_u
           (call $get_codeptr
             (local.get $ip))))
-${indent(watSwitch(
-  `;;wasm
-  (local.get $code)`,
-  {
-    [OP_CODES.OP_CONSTANT]: `;;wasm
+${indent(
+  watSwitch(
+    `;;wasm
+    (local.get $code)`,
+    {
+      [OP_CODES.OP_CONSTANT]: `;;wasm
       (call $push
         (call $get_value
           (i32.load8_u
@@ -42,25 +43,25 @@ ${indent(watSwitch(
                   (local.get $ip)
                   (i32.const 1)))))))
       (br $break)`,
-    [OP_CODES.OP_NIL]: `;;wasm
+      [OP_CODES.OP_NIL]: `;;wasm
       (call $push
         (f64.reinterpret_i64
           (global.get $NIL)))
       (br $break)`,
-    [OP_CODES.OP_TRUE]: `;;wasm
+      [OP_CODES.OP_TRUE]: `;;wasm
       (call $push
         (f64.reinterpret_i64
           (global.get $TRUE)))
       (br $break)`,
-    [OP_CODES.OP_FALSE]: `;;wasm
+      [OP_CODES.OP_FALSE]: `;;wasm
       (call $push
         (f64.reinterpret_i64
           (global.get $FALSE)))
       (br $break)`,
-    [OP_CODES.OP_POP]: `;;wasm
+      [OP_CODES.OP_POP]: `;;wasm
       (call $pop)
       (br $break)`,
-    [OP_CODES.OP_GET_GLOBAL]: `;;wasm
+      [OP_CODES.OP_GET_GLOBAL]: `;;wasm
       (call $push
         (call $table_get
           (call $get_value
@@ -71,7 +72,7 @@ ${indent(watSwitch(
                     (local.get $ip)
                     (i32.const 1))))))))
       (br $break)`,
-    [OP_CODES.OP_DEFINE_GLOBAL]: `;;wasm
+      [OP_CODES.OP_DEFINE_GLOBAL]: `;;wasm
       (call $table_set
         (call $get_value
           (i32.load8_u
@@ -82,7 +83,7 @@ ${indent(watSwitch(
                   (i32.const 1))))))
         (call $pop))
       (br $break)`,
-    [OP_CODES.OP_SET_GLOBAL]: `;;wasm
+      [OP_CODES.OP_SET_GLOBAL]: `;;wasm
       (call $table_set ;; todo: check if not exists (new key)
         (call $get_value
           (i32.load8_u
@@ -93,14 +94,14 @@ ${indent(watSwitch(
                   (i32.const 1))))))
         (call $peek))
       (br $break)`,
-    [OP_CODES.OP_NOT]: `;;wasm
+      [OP_CODES.OP_NOT]: `;;wasm
       (call $push
         (call $bool_val
           (i32.eqz
             (call $as_bool
               (call $pop)))))
       (br $break)`,
-    [OP_CODES.OP_NOT_EQUAL]: `;;wasm
+      [OP_CODES.OP_NOT_EQUAL]: `;;wasm
       (call $push
         (call $bool_val
           (i32.eqz
@@ -108,14 +109,14 @@ ${indent(watSwitch(
               (call $pop)
               (call $pop)))))
       (br $break)`,
-    [OP_CODES.OP_EQUAL]: `;;wasm
+      [OP_CODES.OP_EQUAL]: `;;wasm
       (call $push
         (call $bool_val
           (call $equal
             (call $pop)
             (call $pop))))
       (br $break)`,
-    [OP_CODES.OP_GREATER]: `;;wasm
+      [OP_CODES.OP_GREATER]: `;;wasm
       (local.set $tmp ;; could invert comparison logic instead but harder to read
         (call $pop))
       (call $push
@@ -124,7 +125,7 @@ ${indent(watSwitch(
             (call $pop)
             (local.get $tmp))))
       (br $break)`,
-    [OP_CODES.OP_NOT_LESS]: `;;wasm
+      [OP_CODES.OP_NOT_LESS]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -133,7 +134,7 @@ ${indent(watSwitch(
             (call $pop)
             (local.get $tmp))))
       (br $break)`,
-    [OP_CODES.OP_LESS]: `;;wasm
+      [OP_CODES.OP_LESS]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -142,7 +143,7 @@ ${indent(watSwitch(
             (call $pop)
             (local.get $tmp))))
       (br $break)`,
-    [OP_CODES.OP_NOT_GREATER]: `;;wasm
+      [OP_CODES.OP_NOT_GREATER]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -151,7 +152,7 @@ ${indent(watSwitch(
             (call $pop)
             (local.get $tmp))))
       (br $break)`,
-    [OP_CODES.OP_ADD]: `;;wasm
+      [OP_CODES.OP_ADD]: `;;wasm
       (local.set $tmp
         (call $pop))
       (if
@@ -173,7 +174,7 @@ ${indent(watSwitch(
               (call $pop)
               (local.get $tmp)))))
       (br $break)`,
-    [OP_CODES.OP_SUBTRACT]: `;;wasm
+      [OP_CODES.OP_SUBTRACT]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -181,7 +182,7 @@ ${indent(watSwitch(
           (call $pop)
           (local.get $tmp)))
       (br $break)`,
-    [OP_CODES.OP_MULTIPLY]: `;;wasm
+      [OP_CODES.OP_MULTIPLY]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -189,7 +190,7 @@ ${indent(watSwitch(
           (call $pop)
           (local.get $tmp)))
       (br $break)`,
-    [OP_CODES.OP_DIVIDE]: `;;wasm
+      [OP_CODES.OP_DIVIDE]: `;;wasm
       (local.set $tmp
         (call $pop))
       (call $push
@@ -197,20 +198,23 @@ ${indent(watSwitch(
           (call $pop)
           (local.get $tmp)))
       (br $break)`,
-    [OP_CODES.OP_NEGATE]: `;;wasm
+      [OP_CODES.OP_NEGATE]: `;;wasm
       (call $push
         (f64.neg
           (call $pop)))
       (br $break)`,
-    [OP_CODES.OP_PRINT]: `;;wasm
+      [OP_CODES.OP_PRINT]: `;;wasm
       (call $print_value
         (call $pop))
       (br $break)`,
-    [OP_CODES.OP_RETURN]: `;;wasm
+      [OP_CODES.OP_RETURN]: `;;wasm
       (local.set $result
         (global.get $INTERPRET_OK))
       (br $out)`,
-  }), 6)}
+    },
+  ),
+  6,
+)}
       (br_if $run
         (i32.lt_s
           (local.tee $ip

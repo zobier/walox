@@ -1,4 +1,4 @@
-import { enumToGlobals } from "./common";
+import { enumToGlobals } from './common';
 
 export enum OBJ_TYPE {
   OBJ_STRING = 1,

@@ -9,30 +9,23 @@ const getString = (buffer: ArrayBuffer, ptr: number, len: number) =>
 export const getUtil = (buffer: ArrayBuffer) => ({
   hexDump(ptr: number, len: number) {
     const padHex = (num: number, len = 2) =>
-      num.toString(16)
-        .padStart(len, '0');
+      num.toString(16).padStart(len, '0');
     const i32 = new Uint32Array(buffer, ptr, len);
     const hex = Array.from(i32)
-      .map(n =>
-        padHex(n, 8)
-          .match(/../g)
-          ?.reverse())
+      .map((n) => padHex(n, 8).match(/../g)?.reverse())
       .flat()
       .join('')
       .match(/.{32}/g)
       ?.map((row, i) => {
         const vals = row.match(/../g);
         const ascii = vals
-          ?.reduce((str, val) =>
-            str + String.fromCharCode(parseInt(val, 16)), '')
+          ?.reduce(
+            (str, val) => str + String.fromCharCode(parseInt(val, 16)),
+            '',
+          )
           .replace(/[\x00-\x1f]/g, '.');
 
-        return padHex(i * 16, 6) +
-          ' ' +
-          vals
-            ?.join(' ') +
-          ' ' +
-          ascii;
+        return padHex(i * 16, 6) + ' ' + vals?.join(' ') + ' ' + ascii;
       })
       .join('\n');
     console.log(hex);
@@ -67,7 +60,8 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   logPrecedence(prec: number) {
     console.log(PRECEDENCE[prec] || prec);
   },
-  stringToDouble(ptr: number, len: number) { // todo: implement stdlib functions
+  stringToDouble(ptr: number, len: number) {
+    // todo: implement stdlib functions
     return parseFloat(getString(buffer, ptr, len));
   },
   tokenError(expected: number, got: number) {
