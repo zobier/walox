@@ -9,16 +9,19 @@
     "runts": "ts-node ./src/index",
     "print": "ts-node ./scripts/printModule > module.wat",
     "start": "TARGET=web webpack serve --open",
-    "test": "ts-node src/test/table.test",
+    "test": "jest",
     "watch": "./scripts/watch.js"
   },
   "dependencies": {
     "wabt": "1.0.28"
   },
   "devDependencies": {
+    "@types/jest": "^28.1.7",
     "html-webpack-plugin": "^5.5.0",
+    "jest": "^28.1.3",
     "prettier": "^2.6.2",
     "progress-bar-webpack-plugin": "^2.1.0",
+    "ts-jest": "^28.0.8",
     "ts-loader": "^9.2.8",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3",

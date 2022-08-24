@@ -3,7 +3,7 @@ import { PRECEDENCE } from './compiler';
 import { TOKENS } from './scanner';
 import { INTERPRET_RESULT } from './vm';
 
-const getString = (buffer: ArrayBuffer, ptr: number, len: number) =>
+export const getString = (buffer: ArrayBuffer, ptr: number, len: number) =>
   String.fromCodePoint(...Array.from(new Uint32Array(buffer, ptr, len)));
 
 export const getUtil = (buffer: ArrayBuffer) => ({

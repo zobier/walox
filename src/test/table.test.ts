@@ -5,15 +5,16 @@ import value from '../value';
 import chunk from '../chunk';
 import object from '../object';
 import table from '../table';
-import util, { getUtil } from '../util';
+import util, { getString, getUtil } from '../util';
 
-wabt()
-  .then(async (wabt) => {
-    const module = await WebAssembly.compile(
-      wabt
-        .parseWat(
-          'inline',
-          `;;wasm
+test('table', async () => {
+  await wabt()
+    .then(async (wabt) => {
+      const module = await WebAssembly.compile(
+        wabt
+          .parseWat(
+            'inline',
+            `;;wasm
 (module
   (import "env" "memory"
     (memory 1))
@@ -93,26 +94,33 @@ wabt()
     )
   )
 `,
-        )
-        .toBinary({}).buffer,
-    );
-    const mem = new WebAssembly.Memory({ initial: 1 });
-    const utilities = getUtil(mem.buffer);
-    const importObject = {
-      env: {
-        memory: mem,
-      },
-      util: utilities,
-    };
-    const instance = await WebAssembly.instantiate(module, importObject);
-    console.log('--');
-    const memArray = new Uint32Array(mem.buffer);
-    const source = Uint32Array.from(`foobarbaz`, (c) => c.codePointAt(0) || 0);
-    memArray.set([source.length]);
-    memArray.set(source, 1);
-    (instance.exports.test as Function)(4);
-    // utilities.hexDump(0, 256);
-  })
-  .catch((e) => {
-    console.error(e);
-  });
+          )
+          .toBinary({}).buffer,
+      );
+      const mem = new WebAssembly.Memory({ initial: 1 });
+      const utilities = getUtil(mem.buffer);
+      const logStringMock = jest.spyOn(utilities, 'logString');
+      const logNumMock = jest.spyOn(utilities, 'logNum');
+      const importObject = {
+        env: {
+          memory: mem,
+        },
+        util: utilities,
+      };
+      const instance = await WebAssembly.instantiate(module, importObject);
+      const memArray = new Uint32Array(mem.buffer);
+      const source = Uint32Array.from(
+        `foobarbaz`,
+        (c) => c.codePointAt(0) || 0,
+      );
+      memArray.set([source.length]);
+      memArray.set(source, 1);
+      (instance.exports.test as Function)(4);
+      // utilities.hexDump(0, 256);
+      expect(getString(mem.buffer, ...logStringMock.mock.calls[0])).toBe('baz');
+      expect(logNumMock).toHaveBeenCalledWith(42);
+    })
+    .catch((e) => {
+      console.error(e);
+    });
+});
