@@ -25,4 +25,4 @@ export default `;;wasm
   ${main}
   (export "main"
     (func $main)))
-`;
+`.replace(/\s*;;wasm/g, '');

@@ -49,13 +49,13 @@ export const getUtil = (buffer: ArrayBuffer) => ({
     console.log(num);
   },
   logOpCode(opCode: number) {
-    console.log(OP_CODES[opCode]);
+    console.log(OP_CODES[opCode] || opCode);
   },
-  logInterpretResult(token: number) {
-    console.log(INTERPRET_RESULT[token]);
+  logInterpretResult(result: number) {
+    console.log(INTERPRET_RESULT[result] || result);
   },
   logToken(token: number) {
-    console.log(TOKENS[token]);
+    console.log(TOKENS[token] || token);
   },
 });
 
