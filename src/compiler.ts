@@ -253,10 +253,21 @@ ${indent(watSwitch(
           (global.get $prev_len)
           (i32.const 2))))))
 (func $variable
+  (local $arg i32)
+  (local.set $arg
+    (call $identifier_constant))
+  (if
+    (call $match_token
+      (global.get $TOKEN_EQUAL)) ;; todo: check precedence <= PREC_ASSIGNMENT
+    (then
+      (call $expression)
+      (call $write_chunk
+        (global.get $OP_SET_GLOBAL)))
+    (else
+      (call $write_chunk
+        (global.get $OP_GET_GLOBAL))))
   (call $write_chunk
-    (global.get $OP_GET_GLOBAL))
-  (call $write_chunk
-    (call $identifier_constant)))
+    (local.get $arg)))
 (func $grouping
   (call $expression)
   (call $consume

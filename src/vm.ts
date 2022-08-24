@@ -82,6 +82,17 @@ ${indent(watSwitch(
                   (i32.const 1))))))
         (call $pop))
       (br $break)`,
+    [OP_CODES.OP_SET_GLOBAL]: `;;wasm
+      (call $table_set ;; todo: check if not exists (new key)
+        (call $get_value
+          (i32.load8_u
+            (call $get_codeptr
+              (local.tee $ip
+                (i32.add
+                  (local.get $ip)
+                  (i32.const 1))))))
+        (call $peek))
+      (br $break)`,
     [OP_CODES.OP_NOT]: `;;wasm
       (call $push
         (call $bool_val
