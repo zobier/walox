@@ -250,6 +250,34 @@ export default `;;wasm
         (call $get_closure_function
           (local.get $v)))))
   (if
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_CLASS}))
+    (then
+      (if
+        (local.tee $ptr
+          (call $get_classname
+            (local.get $v)))
+        (then
+          (call $print_value
+            (call $obj_val
+              (local.get $ptr)))))))
+  (if
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_INSTANCE}))
+    (then
+      (if
+        (local.tee $ptr
+          (call $get_classname
+            (call $obj_val
+              (call $get_class
+                (local.get $v)))))
+        (then
+          (call $print_value
+            (call $obj_val
+              (local.get $ptr)))))))
+  (if
     (call $is_number
       (local.get $v))
     (then

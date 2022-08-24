@@ -1,4 +1,7 @@
 export default `;;wasm
+(global $table
+  (mut i32)
+  (i32.const 0))
 (func $main
   (result i32)
   (local $srcptr i32)
@@ -13,7 +16,8 @@ export default `;;wasm
         (i32.const 4))))
   (call $init_value_array
     (i32.const 32))
-  (call $init_table)
+  (global.set $table
+    (call $init_table))
   (call $init_native)
   (call $interpret
     (local.get $srcptr)))

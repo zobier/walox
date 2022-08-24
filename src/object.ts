@@ -1,8 +1,10 @@
 import { struct } from './common';
 
 export enum OBJ_TYPE {
-  OBJ_CLOSURE = 1,
+  OBJ_CLASS = 1,
+  OBJ_CLOSURE,
   OBJ_FUNCTION,
+  OBJ_INSTANCE,
   OBJ_NATIVE,
   OBJ_STRING,
   OBJ_UPVALUE,
@@ -34,6 +36,15 @@ const ObjClosure = struct([
   ['OBJ_TYPE', 'i32'],
   ['*function', 'i32'],
   ['**upvalue', 'i32'],
+]);
+const ObjClass = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['*name', 'i32'],
+]);
+const ObjInstance = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['*class', 'i32'],
+  ['*fields', 'i32'],
 ]);
 
 export default `;;wasm
@@ -223,6 +234,57 @@ export default `;;wasm
   )}
   (call $obj_val
     (local.get $ptr)))
+(func $new_class
+  (param $nameptr i32)
+  (result f64)
+  (local $ptr i32)
+  (local.set $ptr
+    ${ObjClass.alloc()})
+  ${ObjClass.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_CLASS})`,
+  )}
+  ${ObjClass.set(
+    '*name',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $nameptr)`,
+  )}
+  (call $obj_val
+    (local.get $ptr)))
+(func $new_instance
+  (param $classptr i32)
+  (result f64)
+  (local $ptr i32)
+  (local.set $ptr
+    ${ObjInstance.alloc()})
+  ${ObjInstance.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_INSTANCE})`,
+  )}
+  ${ObjInstance.set(
+    '*class',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $classptr)`,
+  )}
+  ${ObjInstance.set(
+    '*fields',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (call $init_table)`,
+  )}
+  (call $obj_val
+    (local.get $ptr)))
 (func $is_obj_type
   (param $v f64)
   (param $type i32)
@@ -233,12 +295,17 @@ export default `;;wasm
       (local.get $v))
     (then
       (i32.eq
-        (i32.load
-          (call $as_obj
-            (local.get $v)))
+        (call $get_obj_type
+          (local.get $v))
         (local.get $type)))
     (else
       (i32.const 0))))
+(func $get_obj_type
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (call $as_obj
+      (local.get $v))))
 (func $get_string
   (param $v f64)
   (result i32)
@@ -441,6 +508,24 @@ export default `;;wasm
   (call $set_upvalue_location
     (local.get $v)
     (local.get $closed)))
+(func $get_classname
+  (param $v f64)
+  (result i32)
+  ${ObjClass.get(
+    '*name',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
+(func $get_class
+  (param $v f64)
+  (result i32)
+  ${ObjInstance.get(
+    '*class',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $copy_string
   (param $start i32)
   (param $len i32)

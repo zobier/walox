@@ -11,10 +11,8 @@ const Entry = struct([
 ]);
 
 export default `;;wasm
-(global $table
-  (mut i32)
-  (i32.const 0))
 (func $init_table
+  (result i32)
   (local $this i32)
   (local $capacity i32)
   (local.set $this
@@ -38,38 +36,33 @@ export default `;;wasm
         (local.get $capacity)
         (i32.const 3)))`, // Entry.size() / 4? why alloc words rather than bytes?
   )}
-  (global.set $table
-    (local.get $this)))
+  (local.get $this))
 (func $get_entryptr
+  (param $table i32)
   (param $i i32)
   (result i32)
-  (local $this i32)
-  (local.set $this
-    (global.get $table))
   (i32.add
     ${Table.get(
       '*entries',
       `;;wasm
-      (local.get $this)`,
+      (local.get $table)`,
     )}
     (i32.mul
       (local.get $i)
       (i32.const ${Entry.size()}))))
 (func $find_entry
+  (param $table i32)
   (param $key f64)
   (result i32)
-  (local $this i32)
   (local $capacity i32)
   (local $i i32)
   (local $entryptr i32)
   (local $keyptr i32)
-  (local.set $this
-    (global.get $table))
   (local.set $capacity
     ${Table.get(
       'capacity',
       `;;wasm
-      (local.get $this)`,
+      (local.get $table)`,
     )})
   (local.set $i
     (i32.and
@@ -82,6 +75,7 @@ export default `;;wasm
     (loop $find
       (local.set $entryptr
         (call $get_entryptr
+          (local.get $table)
           (local.get $i)))
       (local.set $keyptr
         ${Entry.get(
@@ -113,24 +107,23 @@ export default `;;wasm
       (br $find)))
   (local.get $entryptr))
 (func $table_set
+  (param $table i32)
   (param $key f64)
   (param $value f64)
   (result i32)
   ;; todo: realloc if count > capacity * MAX_LOAD
-  (local $this i32)
   (local $count i32)
   (local $entryptr i32)
   (local $new_key i32)
-  (local.set $this
-    (global.get $table))
   (local.set $count
     ${Table.get(
       'count',
       `;;wasm
-      (local.get $this)`,
+      (local.get $table)`,
     )})
   (local.set $entryptr
     (call $find_entry
+      (local.get $table)
       (local.get $key)))
   (local.set $new_key
     (i32.eq
@@ -146,7 +139,7 @@ export default `;;wasm
       ${Table.set(
         'count',
         `;;wasm
-        (local.get $this)`,
+        (local.get $table)`,
         `;;wasm
         (i32.add
           (local.get $count)
@@ -169,14 +162,13 @@ export default `;;wasm
   )}
   (local.get $new_key))
 (func $table_get
+  (param $table i32)
   (param $key f64)
   (result f64)
-  (local $this i32)
   (local $entryptr i32)
-  (local.set $this
-    (global.get $table))
   (local.set $entryptr
     (call $find_entry
+      (local.get $table)
       (local.get $key)))
   ${Entry.get(
     'value',

@@ -25,6 +25,7 @@ export default `;;wasm
     (i32.const ${charToHex('w')}))
   (drop
     (call $table_set
+      (global.get $table)
       (call $new_string
         (local.get $charptr))
       (call $new_native

@@ -26,6 +26,7 @@ wabt()
   (func 
     (export "test")
     (param $srcptr i32)
+    (local $table i32)
     (local $fooptr i32)
     (local $fooptr2 i32)
     (local $barptr i32)
@@ -63,25 +64,30 @@ wabt()
     (local.set $42ptr
       (call $write_value_array
         (f64.const 42)))
-    (call $init_table)
+    (local.set $table
+      (call $init_table))
     (drop
       (call $table_set
+        (local.get $table)
         (call $get_value
           (local.get $fooptr))
         (call $get_value
           (local.get $42ptr))))
     (drop
       (call $table_set
+        (local.get $table)
         (call $get_value
           (local.get $barptr))
         (call $get_value
           (local.get $bazptr))))
     (call $print_value
       (call $table_get
+        (local.get $table)
         (call $get_value
           (local.get $fooptr2))))
     (call $print_value
       (call $table_get
+        (local.get $table)
         (call $get_value
           (local.get $barptr))))
     )

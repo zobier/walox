@@ -830,6 +830,22 @@ ${indent(
           (local.get $i)
           (i32.const 1)))
       (br $loop))))
+(func $class_declaration
+  (local $name i32)
+  (call $consume
+    (i32.const ${TOKENS.TOKEN_IDENTIFIER}))
+  (local.set $name
+    (call $identifier_constant))
+  (call $declare_variable)
+  (call $emit_bytes
+    (i32.const ${OP_CODES.OP_CLASS})
+    (local.get $name))
+  (call $define_variable
+    (local.get $name))
+  (call $consume
+    (i32.const ${TOKENS.TOKEN_LEFT_BRACE}))
+  (call $consume
+    (i32.const ${TOKENS.TOKEN_RIGHT_BRACE})))
 (func $fun_declaration
   (local $global i32)
   (local.set $global
@@ -1080,17 +1096,23 @@ ${indent(
 (func $declaration
   (if
     (call $match_token
-      (i32.const ${TOKENS.TOKEN_FUN}))
+      (i32.const ${TOKENS.TOKEN_CLASS}))
     (then
-      (call $fun_declaration))
+      (call $class_declaration))
     (else
       (if
         (call $match_token
-          (i32.const ${TOKENS.TOKEN_VAR}))
+          (i32.const ${TOKENS.TOKEN_FUN}))
         (then
-          (call $var_declaration))
+          (call $fun_declaration))
         (else
-          (call $statement))))))
+          (if
+            (call $match_token
+              (i32.const ${TOKENS.TOKEN_VAR}))
+            (then
+              (call $var_declaration))
+            (else
+              (call $statement))))))))
 (func $statement
   (if
     (call $match_token

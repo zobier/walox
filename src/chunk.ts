@@ -33,6 +33,7 @@ export enum OP_CODES {
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN,
+  OP_CLASS,
 }
 
 const Chunk = struct([

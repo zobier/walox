@@ -141,43 +141,59 @@ export default `;;wasm
   (param $callee f64)
   (param $arg_count i32)
   (result i32)
-  (if
-    (result i32)
-    (call $is_obj_type
-      (local.get $callee) ;; todo: runtime error if not fun or arg_count != arity
-      (i32.const ${OBJ_TYPE.OBJ_CLOSURE}))
-    (then
-;;      (call $dissasemble
-;;        (call $get_chunk
-;;          (call $get_closure_function
-;;            (local.get $callee))))
-      (call $add_frame
-        (call $as_obj
-          (local.get $callee))
-        (call $get_codeptr
-          (call $get_chunk
-            (call $get_closure_function
-              (local.get $callee)))
-          (i32.const 0))
-        (i32.sub
-          (i32.load
-            (global.get $stack)) ;; *top_of_stack
-          (i32.mul
-            (i32.add
-              (local.get $arg_count)
-              (i32.const 1))
-            (i32.const 8)))))
-    (else
-      (if
-        (call $is_obj_type
-          (local.get $callee)
-          (i32.const ${OBJ_TYPE.OBJ_NATIVE}))
-        (then
-          (call $push
-            (call $native
-              (call $get_native
-                (local.get $callee))))))
-      (local.get $frame))))
+;; todo: runtime error if not fun or arg_count != arity
+  ${watSwitch(
+    `;;wasm
+    (call $get_obj_type
+      (local.get $callee))`,
+    [
+      [
+        OBJ_TYPE.OBJ_CLASS,
+        `;;wasm
+        (call $push ;; should go to stackTop[-argCount - 1]
+          (call $new_instance
+            (call $as_obj
+              (local.get $callee))))
+        (br $break)`,
+      ],
+      [
+        OBJ_TYPE.OBJ_CLOSURE,
+        `;;wasm
+;;        (call $dissasemble
+;;          (call $get_chunk
+;;            (call $get_closure_function
+;;              (local.get $callee))))
+        (local.set $frame
+          (call $add_frame
+            (call $as_obj
+              (local.get $callee))
+            (call $get_codeptr
+              (call $get_chunk
+                (call $get_closure_function
+                  (local.get $callee)))
+              (i32.const 0))
+            (i32.sub
+              (i32.load
+                (global.get $stack)) ;; *top_of_stack
+              (i32.mul
+                (i32.add
+                  (local.get $arg_count)
+                  (i32.const 1))
+                (i32.const 8)))))
+        (br $break)`,
+      ],
+      [
+        OBJ_TYPE.OBJ_NATIVE,
+        `;;wasm
+        (call $push
+          (call $native
+            (call $get_native
+              (local.get $callee))))
+        (br $break)`,
+      ],
+    ]
+  )}
+  (local.get $frame))
 (func $capture_upvalue
   (param $localptr i32)
   (result f64)
@@ -412,6 +428,7 @@ ${indent(
         `;;wasm
         (call $push
           (call $table_get
+            (global.get $table)
             (call $get_value
               (call $read_byte
                 (local.get $frame)))))
@@ -421,6 +438,7 @@ ${indent(
         OP_CODES.OP_DEFINE_GLOBAL,
         `;;wasm
         (call $table_set
+          (global.get $table)
           (call $get_value
             (call $read_byte
               (local.get $frame)))
@@ -443,6 +461,7 @@ ${indent(
         OP_CODES.OP_SET_GLOBAL,
         `;;wasm
         (call $table_set ;; todo: check if not exists (new key)
+          (global.get $table)
           (call $get_value
             (call $read_byte
               (local.get $frame)))
@@ -763,6 +782,18 @@ ${indent(
                 (i32.const 1))
               (i32.const 12))))
         (br $break)`,
+      ],
+      [
+        OP_CODES.OP_CLASS,
+        `;;wasm
+        (call $push
+          (call $new_class
+            (call $as_obj
+              (call $get_value
+                (call $read_byte
+                  (local.get $frame))))))
+        (br $break)
+        `,
       ],
     ],
   ),
