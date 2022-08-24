@@ -845,6 +845,16 @@ ${indent(
           (local.get $i)
           (i32.const 1)))
       (br $loop))))
+(func $method
+  (local $constant i32)
+  (call $consume
+    (i32.const ${TOKENS.TOKEN_IDENTIFIER}))
+  (local.set $constant
+    (call $identifier_constant))
+  (call $function)
+  (call $emit_bytes
+    (i32.const ${OP_CODES.OP_METHOD})
+    (local.get $constant)))
 (func $class_declaration
   (local $name i32)
   (call $consume
@@ -857,10 +867,26 @@ ${indent(
     (local.get $name))
   (call $define_variable
     (local.get $name))
+  (call $variable
+    (i32.const 0))
   (call $consume
     (i32.const ${TOKENS.TOKEN_LEFT_BRACE}))
+  (block $out
+    (loop $block_not_eof
+      (if
+        (i32.or
+          (call $check
+            (i32.const ${TOKENS.TOKEN_RIGHT_BRACE}))
+          (call $check
+            (i32.const ${TOKENS.TOKEN_EOF})))
+        (then
+          (br $out)))
+      (call $method)
+      (br $block_not_eof)))
   (call $consume
-    (i32.const ${TOKENS.TOKEN_RIGHT_BRACE})))
+    (i32.const ${TOKENS.TOKEN_RIGHT_BRACE}))
+  (call $emit_byte
+    (i32.const ${OP_CODES.OP_POP})))
 (func $fun_declaration
   (local $global i32)
   (local.set $global

@@ -835,6 +835,24 @@ ${indent(
         (br $break)
         `,
       ],
+      [
+        OP_CODES.OP_METHOD,
+        `;;wasm
+        (call $table_set
+          (call $get_methods
+            (f64.load
+              (call $peek
+                (i32.const 1))))
+          (call $get_value
+            (call $read_byte
+              (local.get $frame)))
+          (f64.load
+            (call $peek
+              (i32.const 0))))
+        (call $pop)
+        (br $break)
+        `,
+      ],
     ],
   ),
   6,

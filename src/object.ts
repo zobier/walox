@@ -40,6 +40,7 @@ const ObjClosure = struct([
 const ObjClass = struct([
   ['OBJ_TYPE', 'i32'],
   ['*name', 'i32'],
+  ['*methods', 'i32'],
 ]);
 const ObjInstance = struct([
   ['OBJ_TYPE', 'i32'],
@@ -253,6 +254,13 @@ export default `;;wasm
     (local.get $ptr)`,
     `;;wasm
     (local.get $nameptr)`,
+  )}
+  ${ObjClass.set(
+    '*methods',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (call $init_table)`,
   )}
   (call $obj_val
     (local.get $ptr)))
@@ -513,6 +521,15 @@ export default `;;wasm
   (result i32)
   ${ObjClass.get(
     '*name',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
+(func $get_methods
+  (param $v f64)
+  (result i32)
+  ${ObjClass.get(
+    '*methods',
     `;;wasm
     (call $as_obj
       (local.get $v))`,
