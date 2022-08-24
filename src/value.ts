@@ -5,9 +5,9 @@ export default `;;wasm
   (i64.const 0x7ffc000000000000))
 (global $NIL i64
   (i64.const 0x7ffc000000000001))
-(global $TRUE i64
-  (i64.const 0x7ffc000000000002))
 (global $FALSE i64
+  (i64.const 0x7ffc000000000002))
+(global $TRUE i64
   (i64.const 0x7ffc000000000003))
 (; typedef struct {
   i32 count;
@@ -82,4 +82,56 @@ export default `;;wasm
   (f64.load
     (call $get_valueptr
       (local.get $i))))
+(func $is_number
+  (param $v f64)
+  (result i32)
+  (i64.ne
+    (i64.and
+      (i64.reinterpret_f64
+        (local.get $v))
+      (global.get $QNAN))
+    (global.get $QNAN)))
+(func $is_nil
+  (param $v f64)
+  (result i32)
+  (i64.eq
+    (i64.reinterpret_f64
+      (local.get $v))
+    (global.get $NIL)))
+(func $is_bool
+  (param $v f64)
+  (result i32)
+  (i64.eq
+    (i64.or
+      (i64.reinterpret_f64
+        (local.get $v))
+      (i64.const 1))
+    (global.get $TRUE)))
+(func $as_bool
+  (param $v f64)
+  (result i32)
+  (i64.eq
+    (i64.reinterpret_f64
+      (local.get $v))
+    (global.get $TRUE)))
+(func $print_value
+  (param $v f64)
+  (if
+    (call $is_bool
+      (local.get $v))
+    (then
+      (call $logBool
+        (call $as_bool
+          (local.get $v)))))
+  (if
+    (call $is_nil
+      (local.get $v))
+    (then
+      (call $logNil)))
+  (if
+    (call $is_number
+      (local.get $v))
+    (then
+      (call $logDouble
+        (local.get $v)))))
 `;

@@ -122,7 +122,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
           (local.get $code)
           (global.get $OP_RETURN))
         (then
-          (call $logDouble
+          (call $print_value
             (call $pop))
           (local.set $result
             (global.get $INTERPRET_OK))

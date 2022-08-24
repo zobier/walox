@@ -46,6 +46,12 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   logHex(num: number) {
     console.log(num.toString(16));
   },
+  logNil() {
+    console.log('nil');
+  },
+  logBool(b: number) {
+    console.log(!!b);
+  },
   logNum(num: number) {
     console.log(num);
   },
@@ -81,6 +87,11 @@ export default `;;wasm
     (param i32)))
 (import "util" "logHex"
   (func $logHex
+    (param i32)))
+(import "util" "logNil"
+  (func $logNil))
+(import "util" "logBool"
+  (func $logBool
     (param i32)))
 (import "util" "logNum"
   (func $logNum
