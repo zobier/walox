@@ -16,8 +16,9 @@ export default `;;wasm
 } ObjString
 typeder struct {
   i32 OBJ_TYPE;
-  i32 *value;
-  i32 *next
+  i32 *location;
+  f64 closed;
+  i32 *next;
 } ObjUpvalue
 typedef struct {
   i32 OBJ_TYPE;
@@ -95,21 +96,20 @@ ${enumToGlobals(OBJ_TYPE)}
   (call $obj_val
     (local.get $ptr)))
 (func $new_upvalue
-  (param $value f64)
+  (param $valueptr i32)
   (result f64)
   (local $ptr i32)
   (local.set $ptr
     (call $alloc
-      (i32.const 3)))
+      (i32.const 5)))
   (i32.store
     (local.get $ptr)
     (global.get $OBJ_UPVALUE))
   (i32.store
     (i32.add
       (local.get $ptr)
-      (i32.const 4)) ;; *value
-    (call $as_obj
-      (local.get $value)))
+      (i32.const 4)) ;; *location
+    (local.get $valueptr))
   (call $obj_val
     (local.get $ptr)))
 (func $new_function
@@ -371,25 +371,23 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.const 4)))
     (call $as_obj
       (local.get $upvalue))))
-(func $get_upvalue_value
+(func $get_upvalue_location
   (param $v f64)
-  (result f64)
-  (call $obj_val
-    (i32.load
-      (i32.add
-        (call $as_obj
-          (local.get $v))
-        (i32.const 4))))) ;; *value
-(func $set_upvalue_value
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 4)))) ;; *location
+(func $set_upvalue_location
   (param $v f64)
-  (param $value f64)
+  (param $valueptr i32)
   (i32.store
     (i32.add
       (call $as_obj
         (local.get $v))
-      (i32.const 4)) ;; *value
-    (call $as_obj
-      (local.get $value))))
+      (i32.const 4)) ;; *location
+    (local.get $valueptr)))
 (func $get_upvalue_next
   (param $v f64)
   (result f64)
@@ -399,7 +397,7 @@ ${enumToGlobals(OBJ_TYPE)}
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (i32.const 8))))) ;; *next
+        (i32.const 16))))) ;; *next
 (func $set_upvalue_next
   (param $v f64)
   (param $value f64)
@@ -408,9 +406,26 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.load
         (call $as_obj
           (local.get $v)))
-      (i32.const 8)) ;; *next
+      (i32.const 16)) ;; *next
     (call $as_obj
       (local.get $value))))
+(func $set_upvalue_closed
+  (param $v f64)
+  (local $closed i32)
+  (local.set $closed
+    (i32.add
+      (i32.load
+        (call $as_obj
+          (local.get $v)))
+      (i32.const 8))) ;; *closed
+  (f64.store
+    (local.get $closed)
+    (f64.load
+      (call $get_upvalue_location
+        (local.get $v))))
+  (call $set_upvalue_location
+    (local.get $v)
+    (local.get $closed)))
 (func $copy_string
   (param $start i32)
   (param $len i32)
