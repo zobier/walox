@@ -1,5 +1,3 @@
-import { toHex } from './common';
-
 export default `;;wasm
 (global $SIGN_BIT i64
   (i64.const 0x8000000000000000))

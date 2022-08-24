@@ -27,7 +27,7 @@ typedef struct {
   (i32.store
     (i32.add
       (local.get $this)
-      (i32.const 8)) ;; *values
+      (i32.const 8)) ;; *entries
     (call $alloc
       (i32.mul
         (local.get $capacity)
