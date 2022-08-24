@@ -493,9 +493,37 @@ ${indent(
       [
         OP_CODES.OP_RETURN,
         `;;wasm
-        (local.set $result
-          (global.get $INTERPRET_OK))
-        (br $out)`,
+        (local.set $tmp
+          (call $pop))
+        (global.set $frame_count
+          (i32.sub
+            (global.get $frame_count)
+            (i32.const 1)))
+        (if
+          (i32.eqz
+            (global.get $frame_count))
+          (then
+            (call $pop)
+            (local.set $result
+              (global.get $INTERPRET_OK))
+              (br $out)))
+        (i32.store
+          (global.get $stack) ;; *top_of_stack
+          (i32.load
+            (i32.add
+              (local.get $frame)
+              (i32.const 8)))) ;; *slot
+        (call $push
+          (local.get $tmp))
+        (local.set $frame
+          (i32.add
+            (global.get $call_frames)
+            (i32.mul
+              (i32.sub
+                (global.get $frame_count)
+                (i32.const 1))
+              (i32.const 12))))
+        (br $break)`,
       ],
     ],
   ),

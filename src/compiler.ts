@@ -793,6 +793,18 @@ ${indent(
     (global.get $TOKEN_SEMICOLON))
   (call $emit_byte
     (global.get $OP_PRINT)))
+(func $return_statement
+  (if
+    (call $match_token
+      (global.get $TOKEN_SEMICOLON))
+    (then
+      (call $emit_return))
+    (else
+      (call $expression)
+      (call $consume
+        (global.get $TOKEN_SEMICOLON))
+      (call $emit_byte
+        (global.get $OP_RETURN)))))
 (func $declaration
   (if
     (call $match_token
@@ -828,19 +840,25 @@ ${indent(
             (else
               (if
                 (call $match_token
-                  (global.get $TOKEN_WHILE))
+                  (global.get $TOKEN_RETURN))
                 (then
-                  (call $while_statement))
+                  (call $return_statement))
                 (else
                   (if
                     (call $match_token
-                      (global.get $TOKEN_LEFT_BRACE))
+                      (global.get $TOKEN_WHILE))
                     (then
-                      (call $begin_scope)
-                      (call $block)
-                      (call $end_scope))
+                      (call $while_statement))
                     (else
-                      (call $expression_statement))))))))))))
+                      (if
+                        (call $match_token
+                          (global.get $TOKEN_LEFT_BRACE))
+                        (then
+                          (call $begin_scope)
+                          (call $block)
+                          (call $end_scope))
+                        (else
+                          (call $expression_statement))))))))))))))
 (func $number
   (call $emit_bytes
     (global.get $OP_CONSTANT)
@@ -1092,13 +1110,16 @@ ${indent(
           (call $get_local_count)
           (i32.const 1)))
       (br $pop_local))))
+(func $emit_return
+  (call $emit_bytes
+    (global.get $OP_NIL)
+    (global.get $OP_RETURN)))
 (func $end_compiler
   (result f64)
   (local $function f64)
   (local.set $function
     (call $get_function))
-  (call $emit_byte
-    (global.get $OP_RETURN))
+  (call $emit_return)
   (global.set $compiler
     (call $get_enclosing))
   (local.get $function))

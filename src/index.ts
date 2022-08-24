@@ -26,7 +26,7 @@ wabt()
     console.log('--');
     const memArray = new Uint32Array(mem.buffer);
     const source = Uint32Array.from(
-      `fun foo(bar){print bar;} foo("baz");`,
+      `fun foo(bar){return bar;} print foo("foo") + foo("bar");`,
       (c) => c.codePointAt(0) || 0,
     );
     memArray.set([source.length]);
