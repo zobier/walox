@@ -1,4 +1,5 @@
 import { OP_CODES } from './chunk';
+import { PRECEDENCE } from './compiler';
 import { TOKENS } from './scanner';
 import { INTERPRET_RESULT } from './vm';
 
@@ -57,6 +58,9 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   logToken(token: number) {
     console.log(TOKENS[token] || token);
   },
+  logPrecedence(prec: number) {
+    console.log(PRECEDENCE[prec] || prec);
+  },
   stringToDouble(ptr: number, len: number) { // todo: implement stdlib functions
     const str = new TextDecoder().decode(
       new Uint8Array(buffer, ptr, len)
@@ -92,6 +96,9 @@ export default `;;wasm
     (param i32)))
 (import "util" "logToken"
   (func $logToken
+    (param i32)))
+(import "util" "logPrecedence"
+  (func $logPrecedence
     (param i32)))
 (import "util" "stringToDouble"
   (func $stringToDouble

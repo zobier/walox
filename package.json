@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "rm ./dist/*",
     "build": "TARGET=node webpack",
+    "runts": "ts-node ./src/index",
     "start": "TARGET=web webpack serve --open",
     "test": "ts-node src/test/scanner.test",
     "watch": "./scripts/watch.js"

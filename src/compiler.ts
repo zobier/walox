@@ -1,3 +1,5 @@
+import { enumToGlobals } from "./common";
+
 export enum PRECEDENCE {
   PREC_NONE,
   PREC_ASSIGNMENT,  // =
@@ -13,6 +15,7 @@ export enum PRECEDENCE {
 }
 
 export default `;;wasm
+${enumToGlobals(PRECEDENCE)}
 (func $pushop
   (param $opstack i32)
   (param $value i32)
@@ -50,10 +53,42 @@ export default `;;wasm
       (i32.load
         (local.get $opstack))
       (i32.const 4))))
+(func $not_empty
+  (param $opstack i32)
+  (result i32)
+  (i32.gt_u
+    (i32.load
+      (local.get $opstack))
+    (i32.add
+      (local.get $opstack)
+      (i32.const 4))))
+(func $get_prec
+  (param $operator i32)
+  (result i32)
+  (local $result i32)
+  (block $out
+${Object.entries({
+  '$OP_SUBTRACT': '$PREC_TERM',
+  '$OP_ADD': '$PREC_TERM',
+  '$OP_DIVIDE': '$PREC_FACTOR',
+  '$OP_MULTIPLY': '$PREC_FACTOR',
+}).map(([op, prec]) => `;;wasm
+    (if
+      (i32.eq
+        (local.get $operator)
+        (global.get ${op}))
+      (then
+        (local.set $result
+          (global.get ${prec}))
+        (br $out)))
+`).join('')})
+  (local.get $result))
 (func $compile
   (param $srcptr i32)
   (local $token i32)
   (local $opstack i32)
+  (local $op i32)
+  (local $prec i32)
   (call $init_scanner
     (local.get $srcptr))
   (local.set $opstack
@@ -98,9 +133,29 @@ ${Object.entries({
           (local.get $token)
           (global.get ${token}))
         (then
-          (call $pushop ;; todo: shunting yard algorithm
-            (local.get $opstack)
+          (local.set $op
             (global.get ${op}))
+          (local.set $prec
+            (call $get_prec
+              (local.get $op)))
+          (loop $while_prec
+            (if
+              (i32.and
+                (call $not_empty
+                  (local.get $opstack))
+                (i32.ge_u
+                  (call $get_prec
+                    (call $peekop
+                      (local.get $opstack)))
+                  (local.get $prec)))
+              (then
+                (call $write_chunk
+                  (call $popop
+                    (local.get $opstack)))
+                (br $while_prec))))
+          (call $pushop
+            (local.get $opstack)
+            (local.get $op))
           (br $run)))
 `).join('')}
       (br $run)))
@@ -109,12 +164,8 @@ ${Object.entries({
       (call $popop
         (local.get $opstack)))
     (br_if $while_ops
-      (i32.gt_u
-        (i32.load
-          (local.get $opstack))
-        (i32.add
-          (local.get $opstack)
-          (i32.const 4)))))
+      (call $not_empty
+        (local.get $opstack))))
   (call $write_chunk
     (global.get $OP_RETURN)))
 `;
