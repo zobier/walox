@@ -9,20 +9,24 @@ import util from './util';
 import value from './value';
 import vm from './vm';
 
+const indent = (s: string, n: number) => s.replace(/^/mg, ' '.repeat(n));
+
 export default `;;wasm
 (module
   (import "env" "memory"
     (memory 1))
-  ${util} ;; imports must occur before all non-import definitions
-  ${memory}
-  ${chunk}
-  ${value}
-  ${debug}
-  ${scanner}
-  ${compiler}
-  ${stack}
-  ${vm}
-  ${main}
+${indent(`
+${util} ;; imports must occur before all non-import definitions
+${memory}
+${chunk}
+${value}
+${debug}
+${scanner}
+${compiler}
+${stack}
+${vm}
+${main}
+`, 2)}
   (export "main"
     (func $main)))
 `.replace(/\s*;;wasm/g, '');
