@@ -37,7 +37,6 @@ export default `;;wasm
       (i32.const 8)))) ;; 64 / 8
 (func $peek
   (result f64)
-  (local $this i32)
   (f64.load
     (i32.sub
       (i32.load
@@ -69,7 +68,7 @@ export default `;;wasm
     (i32.add
       (i32.add
         (global.get $stack)
-        (i32.const 8)) ;; *stack
+        (i32.const 4)) ;; *stack
       (i32.mul
         (local.get $i)
         (i32.const 8)))))
@@ -80,7 +79,7 @@ export default `;;wasm
     (i32.add
       (i32.add
         (global.get $stack)
-        (i32.const 8)) ;; *stack
+        (i32.const 4)) ;; *stack
       (i32.mul
         (local.get $i)
         (i32.const 8)))

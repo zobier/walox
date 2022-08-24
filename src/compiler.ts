@@ -201,10 +201,10 @@ ${indent(
       (global.get $prev_start)
       (global.get $prev_len))))
 (func $resolve_local
-  (param $name i32)
+  (param $nameptr i32)
   (result i32)
   (local $i i32)
-  (local $local i32)
+  (local $localptr i32)
   (local.set $i
     (i32.sub
       (global.get $local_count)
@@ -216,18 +216,22 @@ ${indent(
           (local.get $i)
           (i32.const 0)))
       (if
-        (local.tee $local
+        (local.tee $localptr
           (i32.load
             (i32.add
               (global.get $locals)
               (i32.mul
-                (global.get $local_count)
-                (i32.const 2))))) ;; *name
+                (local.get $i)
+                (i32.const 8))))) ;; *name
         (then
           (if
             (call $str_cmp
-              (local.get $name)
-              (local.get $local))
+              (call $get_string
+                (call $obj_val
+                  (local.get $nameptr)))
+              (call $get_string
+                (call $obj_val
+                  (local.get $localptr))))
             (then
               (return
                 (local.get $i))))))
@@ -245,14 +249,14 @@ ${indent(
       (global.get $locals)
       (i32.mul
         (global.get $local_count) ;; should check this is < 256
-        (i32.const 2))))
+        (i32.const 8)))) ;; *name
   (i32.store
-    (local.get $localptr) ;; *name
+    (local.get $localptr)
     (local.get $nameptr))
   (i32.store
     (i32.add
       (local.get $localptr)
-      (i32.const 1)) ;; depth
+      (i32.const 4)) ;; depth
     (global.get $scope_depth))
   (global.set $local_count
     (i32.add
@@ -295,9 +299,9 @@ ${indent(
     (loop $block_not_eof
       (if
         (i32.or
-          (call $match_token
+          (call $check
             (global.get $TOKEN_RIGHT_BRACE))
-          (call $match_token
+          (call $check
             (global.get $TOKEN_EOF)))
         (then
           (br $out)))
@@ -551,8 +555,8 @@ ${indent(
                   (global.get $locals)
                   (i32.mul
                     (global.get $local_count)
-                    (i32.const 2)))
-                (i32.const 1))) ;; depth
+                    (i32.const 8)))
+                (i32.const 4))) ;; depth
             (global.get $scope_depth))))
       (call $write_chunk
         (global.get $OP_POP))
