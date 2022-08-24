@@ -298,38 +298,41 @@ ${Object.entries({
             (if
               (i32.eq
                 (i32.add
-                  (local.get $current) ;; fix: consume_number is swallowing the following char
+                  (local.get $current)
                   (i32.const 1))
                 (local.get $end))
               (then
                 (br $end_number)))
-            (local.set $current
-              (i32.add
-                (local.get $current)
-                (i32.const 1)))
-            (local.set $char
-              (i32.load8_u
-                (local.get $current)))
             (if
               (call $is_digit
-                (local.get $char))
+                (i32.load8_u
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1))))
               (then
+                (local.set $current
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1)))
                 (br $consume_number))))
           (if
             (i32.and
               (i32.eq
-                (local.get $char)
+                (i32.load8_u
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1)))
                 (i32.const ${charToHex('.')}))
               (call $is_digit
                 (i32.load8_u
                   (i32.add
                     (local.get $current)
-                    (i32.const 1)))))
+                    (i32.const 2)))))
             (then
               (local.set $current
                 (i32.add
                   (local.get $current)
-                  (i32.const 1)))
+                  (i32.const 2)))
               (loop $consume_decimal
                 (if
                   (i32.eq
@@ -339,15 +342,17 @@ ${Object.entries({
                     (local.get $end))
                   (then
                     (br $end_number)))
-                (local.set $current
-                  (i32.add
-                    (local.get $current)
-                    (i32.const 1)))
                 (if
                   (call $is_digit
                     (i32.load8_u
-                      (local.get $current)))
+                      (i32.add
+                        (local.get $current)
+                        (i32.const 1))))
                   (then
+                    (local.set $current
+                      (i32.add
+                        (local.get $current)
+                        (i32.const 1)))
                     (br $consume_decimal)))))))
         (local.set $result
           (global.get $TOKEN_NUMBER))
