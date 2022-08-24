@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    <style>
+      #input {
+        width: 30em;
+        height: 15em;
+        display: block;
+      }
+      #output {
+        font-family: monospace;
+      }
+      #output::before {
+        content: 'result:';
+        font-family: sans-serif;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="input"></textarea>
+    <button id="run">run</button>
+    <div id="output"></div>
+    <script>
+      const input = document.getElementById('input');
+      const run = document.getElementById('run');
+      const output = document.getElementById('output');
+      fetch('method.lox').then((res) =>
+        res.text().then((src) => (input.value = src)),
+      );
+      run.addEventListener('click', () => {
+        output.innerText = '';
+        getLox((log) => (output.innerText += `${log}\n`)).then((lox) =>
+          lox(input.value),
+        );
+      });
+    </script>
+  </body>
+</html>

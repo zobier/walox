@@ -17,7 +17,7 @@ yarn && yarn build
 ## Running
 
 ```sh
-node dist/main
+node dist/main input-file-name
 ```
 
 ## Dev loop
@@ -25,7 +25,7 @@ node dist/main
 To watch for changes and execute the module in node
 
 ```sh
-yarn watch
+yarn watch -- input-file-name
 ```
 
 To watch for changes and open a browser with the module loaded

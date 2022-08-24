@@ -8,6 +8,7 @@ const config = require('../webpack.config.js');
 const compiler = webpack({
   ...config,
   devtool: false,
+  target: 'node',
 });
 compiler.watch(
   {

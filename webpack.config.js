@@ -1,3 +1,4 @@
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const ProgressPlugin = require('webpack/lib/ProgressPlugin');
@@ -5,7 +6,7 @@ const ProgressPlugin = require('webpack/lib/ProgressPlugin');
 module.exports = {
   entry: ['./src/index.ts'],
   devServer: {
-    static: './dist',
+    static: './examples',
   },
   devtool: 'source-map',
   mode: 'none',
@@ -22,8 +23,12 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
   },
   plugins: [
+    new CopyWebpackPlugin({
+      patterns: [{ from: 'examples' }],
+    }),
     new HtmlWebpackPlugin({
       title: 'walox',
+      template: 'index.html',
     }),
     new ProgressPlugin(),
   ],

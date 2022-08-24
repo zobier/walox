@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rm ./dist/*",
     "build": "TARGET=node webpack",
-    "runts": "ts-node ./src/index",
+    "lox": "ts-node ./src/index",
     "print": "ts-node ./scripts/printModule > module.wat",
     "start": "TARGET=web webpack serve --open",
     "test": "jest",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/jest": "^28.1.7",
+    "copy-webpack-plugin": "^11.0.0",
     "html-webpack-plugin": "^5.5.0",
     "jest": "^28.1.3",
     "prettier": "^2.6.2",

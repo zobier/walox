@@ -6,7 +6,10 @@ import { INTERPRET_RESULT } from './vm';
 export const getString = (buffer: ArrayBuffer, ptr: number, len: number) =>
   String.fromCodePoint(...Array.from(new Uint32Array(buffer, ptr, len)));
 
-export const getUtil = (buffer: ArrayBuffer) => ({
+export const getUtil = (
+  buffer: ArrayBuffer,
+  log: (output: any) => void = console.log,
+) => ({
   hexDump(ptr: number, len: number) {
     const padHex = (num: number, len = 2) =>
       num.toString(16).padStart(len, '0');
@@ -28,44 +31,44 @@ export const getUtil = (buffer: ArrayBuffer) => ({
         return padHex(i * 16, 6) + ' ' + vals?.join(' ') + ' ' + ascii;
       })
       .join('\n');
-    console.log(hex);
+    log(hex);
   },
   logString(ptr: number, len: number) {
-    console.log(getString(buffer, ptr, len));
+    log(getString(buffer, ptr, len));
   },
   logChar(char: number) {
-    console.log(String.fromCodePoint(char));
+    log(String.fromCodePoint(char));
   },
   logHex(num: number) {
-    console.log(num.toString(16));
+    log(num.toString(16));
   },
   logNil() {
-    console.log('nil');
+    log('nil');
   },
   logBool(b: number) {
-    console.log(!!b);
+    log(!!b);
   },
   logNum(num: number) {
-    console.log(num);
+    log(num);
   },
   logOpCode(opCode: number) {
-    console.log(OP_CODES[opCode] || opCode);
+    log(OP_CODES[opCode] || opCode);
   },
   logInterpretResult(result: number) {
-    console.log(INTERPRET_RESULT[result] || result);
+    log(INTERPRET_RESULT[result] || result);
   },
   logToken(token: number) {
-    console.log(TOKENS[token] || token);
+    log(TOKENS[token] || token);
   },
   logPrecedence(prec: number) {
-    console.log(PRECEDENCE[prec] || prec);
+    log(PRECEDENCE[prec] || prec);
   },
   stringToDouble(ptr: number, len: number) {
     // todo: implement stdlib functions
     return parseFloat(getString(buffer, ptr, len));
   },
   tokenError(expected: number, got: number) {
-    console.log(`Token error: expected ${TOKENS[expected]} got ${TOKENS[got]}`);
+    log(`Token error: expected ${TOKENS[expected]} got ${TOKENS[got]}`);
   },
   now() {
     return Date.now();
