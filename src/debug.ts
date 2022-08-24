@@ -4,12 +4,13 @@ import { watSwitch } from './common';
 // todo: add the rest of the instructions to the disassembler
 export default `;;wasm
 (func $dissasemble
+  (param $chunk i32)
   (local $chunkptr i32)
   (local $count i32)
   (local $i i32)
   (local $code i32)
   (local.set $chunkptr
-    (global.get $chunk))
+    (local.get $chunk))
   (local.set $count
     (i32.load
       (local.get $chunkptr)))
@@ -19,7 +20,7 @@ export default `;;wasm
     (local.set $code
       (i32.load8_u
         (call $get_codeptr
-          (global.get $chunk)
+          (local.get $chunk)
           (local.get $i))))
     (call $logOpCode
       (local.get $code))
@@ -37,7 +38,7 @@ ${watSwitch(
         (call $get_value
           (i32.load8_u
             (call $get_codeptr
-              (global.get $chunk)
+              (local.get $chunk)
               (local.tee $i
                 (i32.add
                   (local.get $i)
@@ -51,7 +52,7 @@ ${watSwitch(
       (call $logNum
         (i32.load16_u
           (call $get_codeptr
-            (global.get $chunk)
+            (local.get $chunk)
             (i32.add
               (local.get $i)
               (i32.const 1)))))
@@ -69,7 +70,7 @@ ${watSwitch(
           (i32.const 0)
           (i32.load16_u
             (call $get_codeptr
-              (global.get $chunk)
+              (local.get $chunk)
               (i32.add
                 (local.get $i)
                 (i32.const 1))))))

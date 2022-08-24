@@ -1,15 +1,22 @@
 import { enumToGlobals } from './common';
 
 export enum OBJ_TYPE {
-  OBJ_STRING = 1,
+  OBJ_FUNCTION = 1,
+  OBJ_STRING,
 }
 
 export default `;;wasm
-(; struct ObjString {
+(; typedef struct {
   i32 OBJ_TYPE;
   i32 *chars;
   i32 hash;
-} ;)
+} ObjString
+typedef struct {
+  i32 OBJ_TYPE;
+  i32 arity;
+  i32 *chunk;
+  i32 *name;
+} ObjFunction ;)
 ${enumToGlobals(OBJ_TYPE)}
 (func $hash
   (param $charptr i32)
@@ -48,7 +55,7 @@ ${enumToGlobals(OBJ_TYPE)}
   (local.get $result))
 (func $new_string
   (param $charptr i32)
-  (result i32)
+  (result f64)
   (local $ptr i32)
   (local.set $ptr
     (call $alloc
@@ -67,7 +74,34 @@ ${enumToGlobals(OBJ_TYPE)}
       (i32.const 8)) ;; hash
     (call $hash
       (local.get $charptr)))
-  (local.get $ptr))
+  (call $obj_val
+    (local.get $ptr)))
+(func $new_function
+  (result f64)
+  (local $ptr i32)
+  (local.set $ptr
+    (call $alloc
+      (i32.const 4)))
+  (i32.store
+    (local.get $ptr)
+    (global.get $OBJ_FUNCTION))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 4)) ;; arity
+    (i32.const 0))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 8)) ;; *chunk
+    (call $init_chunk))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 12)) ;; *name
+    (i32.const 0))
+  (call $obj_val
+    (local.get $ptr)))
 (func $is_string
   (param $v f64)
   (result i32)
@@ -79,6 +113,17 @@ ${enumToGlobals(OBJ_TYPE)}
         (call $as_obj
           (local.get $v)))
       (global.get $OBJ_STRING))))
+(func $is_function
+  (param $v f64)
+  (result i32)
+  (i32.and
+    (call $is_obj
+      (local.get $v))
+    (i32.eq
+      (i32.load
+        (call $as_obj
+          (local.get $v)))
+      (global.get $OBJ_FUNCTION))))
 (func $get_string
   (param $v f64)
   (result i32)
@@ -95,6 +140,14 @@ ${enumToGlobals(OBJ_TYPE)}
       (call $as_obj
         (local.get $v))
       (i32.const 8)))) ;; hash
+(func $get_chunk
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 8)))) ;; *chunk
 (func $copy_string
   (param $start i32)
   (param $len i32)
@@ -107,9 +160,8 @@ ${enumToGlobals(OBJ_TYPE)}
     (local.get $start)
     (local.get $ptr)
     (local.get $len))
-  (call $obj_val
-    (call $new_string
-      (local.get $ptr))))
+  (call $new_string
+    (local.get $ptr)))
 (func $str_cmp
   (param $a i32)
   (param $b i32)
@@ -185,7 +237,6 @@ ${enumToGlobals(OBJ_TYPE)}
         (local.get $alen)
         (i32.const 4)))
     (local.get $blen))
-  (call $obj_val
-    (call $new_string
-      (local.get $ptr))))
+  (call $new_string
+    (local.get $ptr)))
 `;

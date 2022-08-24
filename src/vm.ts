@@ -13,6 +13,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (mut i32)
   (i32.const 0))
 (func $read_byte
+  (param $chunk i32)
   (result i32)
   (global.set $ip
     (i32.add
@@ -20,9 +21,10 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (i32.const 1)))
   (i32.load8_u
     (call $get_codeptr
-      (global.get $chunk)
+      (local.get $chunk)
       (global.get $ip))))
 (func $read_short
+  (param $chunk i32)
   (result i32)
   (local $cur i32)
   (local.set $cur
@@ -33,27 +35,36 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (i32.const 2)))
   (i32.load16_u
     (call $get_codeptr
-      (global.get $chunk)
+      (local.get $chunk)
       (i32.add
         (local.get $cur)
         (i32.const 1)))))
 (func $interpret
   (param $srcptr i32)
   (result i32)
+  (local $function f64)
+  (local $chunk i32)
   (local $code i32)
   (local $tmp f64)
   (local $offset i32)
   (local $result i32)
-  (call $compile
-    (local.get $srcptr))
-  ;;(call $dissasemble)
+  (local.set $function
+    (call $compile
+      (local.get $srcptr)))
   (call $init_stack)
+  (call $push
+    (local.get $function))
+  (local.set $chunk
+    (call $get_chunk
+      (local.get $function)))
+;;  (call $dissasemble
+;;    (local.get $chunk))
   (block $out
     (loop $run
       (local.set $code
         (i32.load8_u
           (call $get_codeptr
-            (global.get $chunk)
+            (local.get $chunk)
             (global.get $ip))))
 ${indent(
   watSwitch(
@@ -65,7 +76,8 @@ ${indent(
         `;;wasm
         (call $push
           (call $get_value
-            (call $read_byte)))
+            (call $read_byte
+              (local.get $chunk))))
         (br $break)`,
       ],
       [
@@ -103,7 +115,8 @@ ${indent(
         `;;wasm
         (call $push
           (call $stack_get
-            (call $read_byte)))
+            (call $read_byte
+              (local.get $chunk))))
         (br $break)`,
       ],
       [
@@ -112,7 +125,8 @@ ${indent(
         (call $push
           (call $table_get
             (call $get_value
-              (call $read_byte))))
+              (call $read_byte
+                (local.get $chunk)))))
         (br $break)`,
       ],
       [
@@ -120,7 +134,8 @@ ${indent(
         `;;wasm
         (call $table_set
           (call $get_value
-            (call $read_byte))
+            (call $read_byte
+              (local.get $chunk)))
           (call $pop))
         (br $break)`,
       ],
@@ -128,7 +143,8 @@ ${indent(
         OP_CODES.OP_SET_LOCAL,
         `;;wasm
         (call $stack_set
-          (call $read_byte)
+          (call $read_byte
+            (local.get $chunk))
           (call $peek))
         (br $break)`,
       ],
@@ -137,7 +153,8 @@ ${indent(
         `;;wasm
         (call $table_set ;; todo: check if not exists (new key)
           (call $get_value
-            (call $read_byte))
+            (call $read_byte
+              (local.get $chunk)))
           (call $peek))
         (br $break)`,
       ],
@@ -297,7 +314,8 @@ ${indent(
         OP_CODES.OP_JUMP,
         `;;wasm
         (local.set $offset
-          (call $read_short))
+          (call $read_short
+            (local.get $chunk)))
         (global.set $ip
           (i32.add
             (global.get $ip)
@@ -308,7 +326,8 @@ ${indent(
         OP_CODES.OP_JUMP_IF_FALSE,
         `;;wasm
         (local.set $offset
-          (call $read_short))
+          (call $read_short
+            (local.get $chunk)))
         (if
           (i32.eqz
             (call $as_bool
@@ -324,7 +343,8 @@ ${indent(
         OP_CODES.OP_LOOP,
         `;;wasm
         (local.set $offset
-          (call $read_short))
+          (call $read_short
+            (local.get $chunk)))
         (global.set $ip
           (i32.sub
             (global.get $ip)
