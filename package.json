@@ -7,6 +7,7 @@
     "clean": "rm ./dist/*",
     "build": "TARGET=node webpack",
     "runts": "ts-node ./src/index",
+    "print": "ts-node ./scripts/printModule",
     "start": "TARGET=web webpack serve --open",
     "test": "ts-node src/test/scanner.test",
     "watch": "./scripts/watch.js"

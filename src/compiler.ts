@@ -1,4 +1,5 @@
 import { enumToGlobals, indent, watSwitch } from "./common";
+import { TOKENS } from './scanner';
 
 export enum PRECEDENCE {
   PREC_NONE,
@@ -62,53 +63,32 @@ ${enumToGlobals(PRECEDENCE)}
   (result i32)
   (local $result i32)
 ${indent(watSwitch(
-  '$operator_switch',
-  value => `;;wasm
-    (i32.eq
-      (local.get $operator)
-      ${value})`,
-  label => ({
-    '(global.get $TOKEN_PLUS)': `;;wasm
+  `;;wasm
+  (local.get $operator)`,
+  {
+    [TOKENS.TOKEN_PLUS]: '',
+    [TOKENS.TOKEN_MINUS]: `;;wasm
     (local.set $result
       (global.get $PREC_TERM))
-    (br ${label})`,
-    '(global.get $TOKEN_MINUS)': `;;wasm
-    (local.set $result
-      (global.get $PREC_TERM))
-    (br ${label})`,
-    '(global.get $TOKEN_STAR)': `;;wasm
+    (br $break)`,
+    [TOKENS.TOKEN_STAR]: '',
+    [TOKENS.TOKEN_SLASH]: `;;wasm
     (local.set $result
       (global.get $PREC_FACTOR))
-    (br ${label})`,
-    '(global.get $TOKEN_SLASH)': `;;wasm
-    (local.set $result
-      (global.get $PREC_FACTOR))
-    (br ${label})`,
-    '(global.get $TOKEN_BANG_EQUAL)': `;;wasm
+    (br $break)`,
+    [TOKENS.TOKEN_BANG_EQUAL]: '',
+    [TOKENS.TOKEN_EQUAL_EQUAL]: `;;wasm
     (local.set $result
       (global.get $PREC_EQUALITY))
-    (br ${label})`,
-    '(global.get $TOKEN_EQUAL_EQUAL)': `;;wasm
-    (local.set $result
-      (global.get $PREC_EQUALITY))
-    (br ${label})`,
-    '(global.get $TOKEN_GREATER)': `;;wasm
-    (local.set $result
-      (global.get $PREC_COMPARISON))
-    (br ${label})`,
-    '(global.get $TOKEN_GREATER_EQUAL)': `;;wasm
+    (br $break)`,
+    [TOKENS.TOKEN_GREATER]: '',
+    [TOKENS.TOKEN_GREATER_EQUAL]: '',
+    [TOKENS.TOKEN_LESS]: '',
+    [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
     (local.set $result
       (global.get $PREC_COMPARISON))
-    (br ${label})`,
-    '(global.get $TOKEN_LESS)': `;;wasm
-    (local.set $result
-      (global.get $PREC_COMPARISON))
-    (br ${label})`,
-    '(global.get $TOKEN_LESS_EQUAL)': `;;wasm
-    (local.set $result
-      (global.get $PREC_COMPARISON))
-    (br ${label})`,
-  }), `;;wasm
+    (br $break)`,
+  }, `;;wasm
   (local.set $result
     (global.get $PREC_NONE))`), 2)}
   (local.get $result))
@@ -116,37 +96,28 @@ ${indent(watSwitch(
   (param $precedence i32)
   (call $advance)
 ${indent(watSwitch(
-    '$prefix_switch',
-    value => `;;wasm
-    (i32.eq
-      (global.get $previous)
-      ${value})`,
-    label => ({
-      '(global.get $TOKEN_LEFT_PAREN)': `;;wasm
+    `;;wasm
+    (global.get $previous)`,
+    {
+      [TOKENS.TOKEN_LEFT_PAREN]: `;;wasm
     (call $grouping)
-    (br ${label})`,
-      '(global.get $TOKEN_MINUS)': `;;wasm
-    (call $unary)
-    (br ${label})`,
-      '(global.get $TOKEN_NUMBER)': `;;wasm
+    (br $break)`,
+      [TOKENS.TOKEN_NUMBER]: `;;wasm
     (call $number)
-    (br ${label})`,
-      '(global.get $TOKEN_STRING)': `;;wasm
+    (br $break)`,
+      [TOKENS.TOKEN_STRING]: `;;wasm
     (call $string)
-    (br ${label})`,
-      '(global.get $TOKEN_BANG)': `;;wasm
+    (br $break)`,
+      [TOKENS.TOKEN_MINUS]: '',
+      [TOKENS.TOKEN_BANG]: `;;wasm
     (call $unary)
-    (br ${label})`,
-      '(global.get $TOKEN_FALSE)': `;;wasm
+    (br $break)`,
+      [TOKENS.TOKEN_FALSE]: '',
+      [TOKENS.TOKEN_TRUE]: '',
+      [TOKENS.TOKEN_NIL]: `;;wasm
     (call $literal)
-    (br ${label})`,
-      '(global.get $TOKEN_TRUE)': `;;wasm
-    (call $literal)
-    (br ${label})`,
-      '(global.get $TOKEN_NIL)': `;;wasm
-    (call $literal)
-    (br ${label})`,
-    })), 2)} ;; default should be "expect expression" error
+    (br $break)`,
+    }), 2)} ;; default should be "expect expression" error
   (block $out
     (loop $infix
       (if
@@ -158,43 +129,22 @@ ${indent(watSwitch(
           (br $out)))
         (call $advance)
 ${indent(watSwitch(
-      '$infix_switch',
-      value => `;;wasm
-      (i32.eq
-        (global.get $previous)
-        ${value})`,
-      label => ({
-        '(global.get $TOKEN_PLUS)': `;;wasm
+      `;;wasm
+      (global.get $previous)`,
+      {
+        [TOKENS.TOKEN_PLUS]: '',
+        [TOKENS.TOKEN_MINUS]: '',
+        [TOKENS.TOKEN_STAR]: '',
+        [TOKENS.TOKEN_SLASH]: '',
+        [TOKENS.TOKEN_BANG_EQUAL]: '',
+        [TOKENS.TOKEN_EQUAL_EQUAL]: '',
+        [TOKENS.TOKEN_GREATER]: '',
+        [TOKENS.TOKEN_GREATER_EQUAL]: '',
+        [TOKENS.TOKEN_LESS]: '',
+        [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
         (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_MINUS)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_STAR)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_SLASH)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_BANG_EQUAL)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_EQUAL_EQUAL)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_GREATER)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_GREATER_EQUAL)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_LESS)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-        '(global.get $TOKEN_LESS_EQUAL)': `;;wasm
-        (call $binary)
-        (br ${label})`,
-      })), 8)}
+        (br $break)`,
+      }), 8)}
         (br $infix)))
   )
 (func $expression
@@ -231,21 +181,18 @@ ${indent(watSwitch(
   (call $parse_precedence
     (global.get $PREC_UNARY))
 ${indent(watSwitch(
-        '$operator_switch',
-        value => `;;wasm
-    (i32.eq
-      (local.get $operator)
-      ${value})`,
-        label => ({
-          '(global.get $TOKEN_MINUS)': `;;wasm
+        `;;wasm
+      (local.get $operator)`,
+        {
+          [TOKENS.TOKEN_MINUS]: `;;wasm
     (call $write_chunk
       (global.get $OP_NEGATE))
-    (br ${label})`,
-          '(global.get $TOKEN_BANG)': `;;wasm
+    (br $break)`,
+          [TOKENS.TOKEN_BANG]: `;;wasm
     (call $write_chunk
       (global.get $OP_NOT))
-    (br ${label})`,
-        })), 2)}
+    (br $break)`,
+        }), 2)}
   )
 (func $binary
   (local $operator i32)
@@ -257,87 +204,82 @@ ${indent(watSwitch(
         (local.get $operator))
       (i32.const 1)))
 ${indent(watSwitch(
-        '$operator_switch',
-        value => `;;wasm
-    (i32.eq
-      (local.get $operator)
-      ${value})`,
-        label => ({
-          '(global.get $TOKEN_PLUS)': `;;wasm
+          `;;wasm
+      (local.get $operator)`,
+          {
+            [TOKENS.TOKEN_PLUS]: `;;wasm
     (call $write_chunk
       (global.get $OP_ADD))
-    (br ${label})`,
-          '(global.get $TOKEN_MINUS)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_MINUS]: `;;wasm
     (call $write_chunk
       (global.get $OP_SUBTRACT))
-    (br ${label})`,
-          '(global.get $TOKEN_STAR)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_STAR]: `;;wasm
     (call $write_chunk
       (global.get $OP_MULTIPLY))
-    (br ${label})`,
-          '(global.get $TOKEN_SLASH)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_SLASH]: `;;wasm
     (call $write_chunk
       (global.get $OP_DIVIDE))
-    (br ${label})`,
-          '(global.get $TOKEN_BANG_EQUAL)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_BANG_EQUAL]: `;;wasm
     (call $write_chunk
       (global.get $OP_NOT_EQUAL))
-    (br ${label})`,
-          '(global.get $TOKEN_EQUAL_EQUAL)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_EQUAL_EQUAL]: `;;wasm
     (call $write_chunk
       (global.get $OP_EQUAL))
-    (br ${label})`,
-          '(global.get $TOKEN_GREATER)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_GREATER]: `;;wasm
     (call $write_chunk
       (global.get $OP_GREATER))
-    (br ${label})`,
-          '(global.get $TOKEN_GREATER_EQUAL)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_GREATER_EQUAL]: `;;wasm
     (call $write_chunk
       (global.get $OP_NOT_LESS))
-    (br ${label})`,
-          '(global.get $TOKEN_LESS)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_LESS]: `;;wasm
     (call $write_chunk
       (global.get $OP_LESS))
-    (br ${label})`,
-          '(global.get $TOKEN_LESS_EQUAL)': `;;wasm
+    (br $break)`,
+            [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
     (call $write_chunk
       (global.get $OP_NOT_GREATER))
-    (br ${label})`,
-        })), 2)}
+    (br $break)`,
+          }), 2)}
   )
 (func $literal
   (local $literal i32)
   (local.set $literal
     (global.get $previous))
 ${indent(watSwitch(
-        '$literal_switch',
-        value => `;;wasm
-    (i32.eq
-      (local.get $literal)
-      ${value})`,
-        label => ({
-          '(global.get $TOKEN_FALSE)': `;;wasm
+            `;;wasm
+      (local.get $literal)`,
+            {
+              [TOKENS.TOKEN_FALSE]: `;;wasm
     (call $write_chunk
       (global.get $OP_FALSE))
-    (br ${label})`,
-          '(global.get $TOKEN_TRUE)': `;;wasm
+    (br $break)`,
+              [TOKENS.TOKEN_TRUE]: `;;wasm
     (call $write_chunk
       (global.get $OP_TRUE))
-    (br ${label})`,
-          '(global.get $TOKEN_NIL)': `;;wasm
+    (br $break)`,
+              [TOKENS.TOKEN_NIL]: `;;wasm
     (call $write_chunk
       (global.get $OP_NIL))
-    (br ${label})`,
-        })), 2)}
+    (br $break)`,
+            }), 2)}
   )
 (func $compile
   (param $srcptr i32)
   (call $init_scanner
     (local.get $srcptr))
   (call $advance)
-  (call $expression)
-  (call $consume
-    (global.get $TOKEN_EOF))
+  ;; while !EOF declaration
+        (call $expression)
+        (call $consume
+          (global.get $TOKEN_EOF))
   (call $write_chunk
     (global.get $OP_RETURN))
   )

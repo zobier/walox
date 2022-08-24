@@ -6,21 +6,42 @@ export const enumToGlobals = (e: object) => Object.keys(e)
   ).join('\n');
 
 export const watSwitch = (
-  label: string,
-  condition: (value: string) => string,
-  cases: (label: string) => Record<string, string>,
+  value: string,
+  cases: Record<number, string>,
   default_case: string = '',
 ) => {
+  const {
+    head,
+    tail,
+    targets
+  } = Object.entries(cases).reduce(({ head, tail, targets }, [target, consequent], i) => {
+    const label = `$case${i}`;
+    (targets[parseInt(target)] as any) = label;
+    return {
+      head: `;;wasm
+  (block ${label}
+    ${head}`,
+      targets,
+      tail: `;;wasm
+    ${tail})
+    ;; ${label}
+    ${consequent}`,
+    };
+  }, {
+    head: '',
+    tail: '',
+    targets: [],
+  });
+
   return `;;wasm
-(block ${label}
-${Object.entries(cases(label)).map(([value, subsequent]) => `;;wasm
-  (if
-    ${condition(value)}
-    (then
-      ${subsequent}))
-`).join('')}
+(block $break
+  (block $default
+${head}
+  (br_table
+    ${[...targets].map(t => t || '$default').join(' ')} $default
+    ${value})${tail}
 ${default_case}
-)`;
+  ))`;
 };
 
 export const toHex = (n: number) => '0x' + n.toString(16);
