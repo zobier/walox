@@ -72,6 +72,7 @@ ${Object.entries({
   '$OP_ADD': '$PREC_TERM',
   '$OP_DIVIDE': '$PREC_FACTOR',
   '$OP_MULTIPLY': '$PREC_FACTOR',
+  '$OP_NEGATE': '$PREC_UNARY',
 }).map(([op, prec]) => `;;wasm
     (if
       (i32.eq
@@ -89,6 +90,7 @@ ${Object.entries({
   (local $opstack i32)
   (local $op i32)
   (local $prec i32)
+  (local $prev i32)
   (call $init_scanner
     (local.get $srcptr))
   (local.set $opstack
@@ -101,6 +103,8 @@ ${Object.entries({
       (i32.const 4)))
   (block $out
     (loop $run
+      (local.set $prev
+        (local.get $token))
       (local.set $token
         (call $scan_token))
       (if
@@ -152,6 +156,23 @@ ${Object.entries({
                 (br $group))))
           (call $popop ;; should assert group op
             (local.get $opstack))
+          (br $run)))
+      (if
+        (i32.and
+          (i32.eq
+            (local.get $token)
+            (global.get $TOKEN_MINUS))
+          (i32.and
+            (i32.ne
+              (local.get $prev)
+              (global.get $TOKEN_NUMBER))
+            (i32.ne
+              (local.get $prev)
+              (global.get $TOKEN_RIGHT_PAREN))))
+        (then
+          (call $pushop
+            (local.get $opstack)
+            (global.get $OP_NEGATE))
           (br $run)))
       (block $switch_op
 ${Object.entries({
