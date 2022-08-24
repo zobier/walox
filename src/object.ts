@@ -17,6 +17,7 @@ export default `;;wasm
 typeder struct {
   i32 OBJ_TYPE;
   i32 *value;
+  i32 *next
 } ObjUpvalue
 typedef struct {
   i32 OBJ_TYPE;
@@ -99,7 +100,7 @@ ${enumToGlobals(OBJ_TYPE)}
   (local $ptr i32)
   (local.set $ptr
     (call $alloc
-      (i32.const 2)))
+      (i32.const 3)))
   (i32.store
     (local.get $ptr)
     (global.get $OBJ_UPVALUE))
@@ -372,39 +373,42 @@ ${enumToGlobals(OBJ_TYPE)}
       (local.get $upvalue))))
 (func $get_upvalue_value
   (param $v f64)
-  (param $i i32)
+  (result f64)
+  (call $obj_val
+    (i32.load
+      (i32.add
+        (call $as_obj
+          (local.get $v))
+        (i32.const 4))))) ;; *value
+(func $set_upvalue_value
+  (param $v f64)
+  (param $value f64)
+  (i32.store
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 4)) ;; *value
+    (call $as_obj
+      (local.get $value))))
+(func $get_upvalue_next
+  (param $v f64)
   (result f64)
   (call $obj_val
     (i32.load
       (i32.add
         (i32.load
-          (i32.add
-            (i32.load
-              (i32.add
-                (call $as_obj
-                  (local.get $v))
-                (i32.const 8))) ;; **upvalue
-            (i32.mul
-              (local.get $i)
-              (i32.const 4))))
-        (i32.const 4))))) ;; *value
-(func $set_upvalue_value
+          (call $as_obj
+            (local.get $v)))
+        (i32.const 8))))) ;; *next
+(func $set_upvalue_next
   (param $v f64)
-  (param $i i32)
   (param $value f64)
   (i32.store
     (i32.add
       (i32.load
-        (i32.add
-          (i32.load
-            (i32.add
-              (call $as_obj
-                (local.get $v))
-              (i32.const 8))) ;; **upvalue
-          (i32.mul
-            (local.get $i)
-            (i32.const 4))))
-      (i32.const 4)) ;; *value
+        (call $as_obj
+          (local.get $v)))
+      (i32.const 8)) ;; *next
     (call $as_obj
       (local.get $value))))
 (func $copy_string

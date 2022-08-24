@@ -20,6 +20,9 @@ ${enumToGlobals(INTERPRET_RESULT)}
 (global $frame_count
   (mut i32)
   (i32.const 0))
+(global $open_upvalues
+  (mut f64) ;; perhaps change to pointer
+  (f64.const 0))
 (func $read_byte
   (param $frame i32)
   (result i32)
@@ -160,6 +163,73 @@ ${enumToGlobals(INTERPRET_RESULT)}
               (call $get_native
                 (local.get $callee))))))
       (local.get $frame))))
+(func $capture_upvalue
+  (param $local f64)
+  (result f64)
+  (local $prev_upvalue f64)
+  (local $upvalue f64)
+  (local $created_upvalue f64)
+  (local.set $upvalue
+    (global.get $open_upvalues))
+  (block $out
+    (loop $find_upvalue
+      (br_if $out
+        (if
+          (result i32)
+          (f64.eq
+            (local.get $upvalue)
+            (f64.const 0))
+          (then
+            (i32.const 1))
+          (else
+            (i32.le_u
+              (call $as_obj
+                (call $get_upvalue_value
+                  (local.get $upvalue)))
+              (call $as_obj
+                (local.get $local))))))
+      (local.set $prev_upvalue
+        (local.get $upvalue))
+      (local.set $upvalue
+        (call $get_upvalue_next
+          (local.get $upvalue)))
+      (br $find_upvalue)))
+  (if
+    (if
+      (result i32)
+      (f64.ne
+        (local.get $upvalue)
+        (f64.const 0))
+      (then
+        (i32.const 1))
+      (else
+        (i32.eq
+          (call $as_obj
+            (call $get_upvalue_value
+              (local.get $upvalue)))
+          (call $as_obj
+            (local.get $local)))))
+      (then
+        (return
+          (local.get $upvalue))))
+  (local.set $created_upvalue
+    (call $new_upvalue
+      (local.get $local)))
+  (call $set_upvalue_next
+    (local.get $created_upvalue)
+    (local.get $upvalue))
+  (if
+    (f64.eq
+      (local.get $prev_upvalue)
+      (f64.const 0))
+    (then
+      (global.set $open_upvalues
+        (local.get $created_upvalue)))
+    (else
+      (call $set_upvalue_next
+        (local.get $prev_upvalue)
+        (local.get $created_upvalue))))
+  (local.get $created_upvalue))
 (func $capture_upvalues
   (param $closure f64)
   (param $frameptr i32)
@@ -190,7 +260,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (local.get $is_local)
         (then
           (local.set $upvalue
-            (call $new_upvalue
+            (call $capture_upvalue
               (call $get_slot
                 (local.get $frameptr)
                 (local.get $index)))))
@@ -346,22 +416,24 @@ ${indent(
         `;;wasm
         (call $push
           (call $get_upvalue_value
-            (call $obj_val
-              (i32.load
-                (local.get $frame)))
-            (call $read_byte
-              (local.get $frame))))
+            (call $get_upvalue
+              (call $obj_val
+                (i32.load
+                  (local.get $frame)))
+              (call $read_byte
+                (local.get $frame)))))
       (br $break)`
       ],
       [
         OP_CODES.OP_SET_UPVALUE,
         `;;wasm
         (call $set_upvalue_value
-          (call $obj_val
-            (i32.load
+          (call $get_upvalue
+            (call $obj_val
+              (i32.load
+                (local.get $frame)))
+            (call $read_byte
               (local.get $frame)))
-          (call $read_byte
-            (local.get $frame))
           (call $peek
             (i32.const 0)))
       (br $break)`
