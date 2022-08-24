@@ -122,6 +122,21 @@ export default `;;wasm
     (i64.reinterpret_f64
       (local.get $v))
     (global.get $TRUE)))
+(func $equal
+  (param $a f64)
+  (param $b f64)
+  (result i32)
+  (select
+    (f64.eq
+      (local.get $a)
+      (local.get $b))
+    (i64.eq
+      (i64.reinterpret_f64
+        (local.get $a))
+      (i64.reinterpret_f64
+        (local.get $b)))
+    (call $is_number
+      (local.get $a))))
 (func $print_value
   (param $v f64)
   (if

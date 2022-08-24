@@ -66,18 +66,18 @@ ${indent(watSwitch(
             (call $as_bool
               (call $pop)))))
       (br ${label})`,
-    '(global.get $OP_NOT_EQUAL)) ;; fix: nil != nil': `;;wasm
+    '(global.get $OP_NOT_EQUAL)': `;;wasm
       (call $push
         (call $bool_val
           (i32.eqz
-            (f64.eq
+            (call $equal
               (call $pop)
               (call $pop)))))
       (br ${label})`,
     '(global.get $OP_EQUAL)': `;;wasm
       (call $push
         (call $bool_val
-          (f64.eq
+          (call $equal
             (call $pop)
             (call $pop))))
       (br ${label})`,
