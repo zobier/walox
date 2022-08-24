@@ -12,6 +12,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (result i32)
   (local $ip i32)
   (local $code i32)
+  (local $tmp f64)
   (local $result i32)
   (local.set $ip
     (i32.const 0))
@@ -22,6 +23,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (i32.load8_u
           (call $get_codeptr
             (local.get $ip))))
+      ;; todo: create equivalent of switch for the following
       (if
         (i32.eq
           (local.get $code)
@@ -35,6 +37,58 @@ ${enumToGlobals(INTERPRET_RESULT)}
                     (i32.add
                       (local.get $ip)
                       (i32.const 1)))))))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_ADD))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (f64.add
+              (call $pop)
+              (local.get $tmp)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_SUBTRACT))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (f64.sub
+              (call $pop)
+              (local.get $tmp)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_MULTIPLY))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (f64.mul
+              (call $pop)
+              (local.get $tmp)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_DIVIDE))
+        (then
+          (local.set $tmp
+            (call $pop))
+          (call $push
+            (f64.div
+              (call $pop)
+              (local.get $tmp)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_NEGATE))
+        (then
+          (call $push
+            (f64.neg
+              (call $pop)))))
       (if
         (i32.eq
           (local.get $code)

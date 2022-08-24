@@ -1,3 +1,4 @@
+// todo: add the rest of the instructions to the disassembler
 export default `;;wasm
 (func $dissasemble
   (local $chunkptr i32)
