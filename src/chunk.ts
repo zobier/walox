@@ -1,4 +1,4 @@
-import { enumToGlobals } from './util';
+import { enumToGlobals } from './common';
 
 export enum OP_CODES {
   OP_CONSTANT = 1,

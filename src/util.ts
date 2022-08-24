@@ -1,11 +1,6 @@
 import { OP_CODES } from './chunk';
-
-export const enumToGlobals = (e: object) => Object.keys(e)
-  .filter(key => isNaN(Number(key)))
-  .map(op => `;;wasm
-(global $${op} i32
-  (i32.const ${e[op as keyof typeof e]}))`
-  ).join('\n');
+import { TOKENS } from './scanner';
+import { INTERPRET_RESULT } from './vm';
 
 export const getUtil = (buffer: ArrayBuffer) => ({
   hexDump(ptr: number, len: number) {
@@ -56,28 +51,40 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   logOpCode(opCode: number) {
     console.log(OP_CODES[opCode]);
   },
+  logInterpretResult(token: number) {
+    console.log(INTERPRET_RESULT[token]);
+  },
+  logToken(token: number) {
+    console.log(TOKENS[token]);
+  },
 });
 
 export default `;;wasm
-(import  "util"  "hexDump"
-  (func  $hexDump
-    (param  i32  i32)))
-(import  "util"  "logString"
-  (func  $logString
-    (param  i32  i32)))
-(import  "util"  "logChar"
-  (func  $logChar
-    (param  i32)))
-(import  "util"  "logHex"
-  (func  $logHex
-    (param  i32)))
-(import  "util"  "logNum"
-  (func  $logNum
-    (param  i32)))
-(import  "util"  "logNum"
-  (func  $logDouble
-    (param  f64)))
-(import  "util"  "logOpCode"
-  (func  $logOpCode
-    (param  i32)))
+(import "util" "hexDump"
+  (func $hexDump
+    (param i32 i32)))
+(import "util" "logString"
+  (func $logString
+    (param i32 i32)))
+(import "util" "logChar"
+  (func $logChar
+    (param i32)))
+(import "util" "logHex"
+  (func $logHex
+    (param i32)))
+(import "util" "logNum"
+  (func $logNum
+    (param i32)))
+(import "util" "logNum"
+  (func $logDouble
+    (param f64)))
+(import "util" "logOpCode"
+  (func $logOpCode
+    (param i32)))
+(import "util" "logInterpretResult"
+  (func $logInterpretResult
+    (param i32)))
+(import "util" "logToken"
+  (func $logToken
+    (param i32)))
 `;

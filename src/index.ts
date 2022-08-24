@@ -1,34 +1,12 @@
 import wabt from 'wabt';
 
-import chunk from './chunk';
-import debug from './debug';
-import main from './main';
-import memory from './memory';
-import stack from './stack';
-import util, { getUtil } from './util';
-import value from './value';
-import vm, { INTERPRET_RESULT } from './vm';
+import moduleSrc from './module';
+import { getUtil } from './util';
 
 wabt().then(async (wabt) => {
   const module = await WebAssembly.compile(
     wabt
-      .parseWat(
-        'inline',
-        `;;wasm
-        (module
-          (import "env" "memory"
-            (memory 1))
-          ${util} ;; imports must occur before all non-import definitions
-          ${memory}
-          ${chunk}
-          ${value}
-          ${debug}
-          ${stack}
-          ${vm}
-          ${main}
-          (export "main"
-            (func $main)))`
-      )
+      .parseWat('inline', moduleSrc)
       .toBinary({})
       .buffer
   );
@@ -42,9 +20,21 @@ wabt().then(async (wabt) => {
   };
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
+  const memArray = new Uint8Array(mem.buffer);
+  const source = new TextEncoder().encode("(");
+  const len = new Uint32Array([source.length]);
+  memArray.set(len)
+  memArray.set(source, 4);
   const result = (instance.exports.main as Function)();
   // utilities.hexDump(0, 64);
-  console.log(INTERPRET_RESULT[result]);
+  utilities.logInterpretResult(result);
 }).catch(e => {
   console.error(e);
+  const func = e.toString().match(/function #(\d+)/);
+  if (func) {
+    const funcName = Array.from(
+      moduleSrc.matchAll(/\(\s*func\s*([$\w]+)/g)
+    ).map(m => m[1])[func[1]];
+    console.log(`Error in ${func[0]}: ${funcName}`);
+  }
 });

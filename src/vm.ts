@@ -1,4 +1,4 @@
-import { enumToGlobals } from "./util";
+import { enumToGlobals } from './common';
 
 export enum INTERPRET_RESULT {
   INTERPRET_OK = 1,
@@ -9,6 +9,12 @@ export enum INTERPRET_RESULT {
 export default `;;wasm
 ${enumToGlobals(INTERPRET_RESULT)}
 (func $interpret
+  (param $srcptr i32)
+  (result i32)
+  (call $compile
+    (local.get $srcptr))
+  (global.get $INTERPRET_OK))
+(func $run
   (result i32)
   (local $ip i32)
   (local $code i32)
