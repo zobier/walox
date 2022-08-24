@@ -120,10 +120,24 @@ ${indent(watSwitch(
     '(global.get $OP_ADD)': `;;wasm
       (local.set $tmp
         (call $pop))
-      (call $push
-        (f64.add
-          (call $pop)
-          (local.get $tmp)))
+      (if
+        (i32.and
+          (call $is_obj ;; todo: check for string obj when adding other types
+            (local.get $tmp))
+          (call $is_obj
+            (call $peek)))
+        (then
+          (call $push
+            (call $concatenate
+              (call $as_obj
+                (call $pop))
+              (call $as_obj
+                (local.get $tmp)))))
+        (else
+          (call $push
+            (f64.add
+              (call $pop)
+              (local.get $tmp)))))
       (br ${label})`,
     '(global.get $OP_SUBTRACT)': `;;wasm
       (local.set $tmp

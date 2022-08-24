@@ -36,6 +36,16 @@ export default `;;wasm
     (i32.add
       (local.get $top_of_stack)
       (i32.const 8)))) ;; 64 / 8
+(func $peek
+  (result f64)
+  (local $this i32)
+  (local.set $this
+    (global.get $stack))
+  (f64.load
+    (i32.sub
+      (i32.load
+        (local.get $this))
+      (i32.const 8)))) ;; 64 / 8
 (func $pop
   (result f64)
   (local $this i32)
