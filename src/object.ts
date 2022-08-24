@@ -5,6 +5,7 @@ export enum OBJ_TYPE {
   OBJ_FUNCTION,
   OBJ_NATIVE,
   OBJ_STRING,
+  OBJ_UPVALUE,
 }
 
 export default `;;wasm
@@ -13,9 +14,14 @@ export default `;;wasm
   i32 *chars;
   i32 hash;
 } ObjString
+typeder struct {
+  i32 OBJ_TYPE;
+  i32 *value
+} ObjUpvalue
 typedef struct {
   i32 OBJ_TYPE;
   i32 arity;
+  i32 upvalue_count;
   i32 *chunk;
   i32 *name;
 } ObjFunction
@@ -26,6 +32,7 @@ typedef struct {
 typedef struct {
   i32 OBJ_TYPE;
   i32 *function;
+  i32 **upvalue
 } ObjClosure ;)
 ${enumToGlobals(OBJ_TYPE)}
 (func $hash
@@ -86,6 +93,24 @@ ${enumToGlobals(OBJ_TYPE)}
       (local.get $charptr)))
   (call $obj_val
     (local.get $ptr)))
+(func $new_upvalue
+  (param $value f64)
+  (result f64)
+  (local $ptr i32)
+  (local.set $ptr
+    (call $alloc
+      (i32.const 2)))
+  (i32.store
+    (local.get $ptr)
+    (global.get $OBJ_UPVALUE))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 4)) ;; *value
+    (call $as_obj
+      (local.get $value)))
+  (call $obj_val
+    (local.get $ptr)))
 (func $new_function
   (result f64)
   (local $ptr i32)
@@ -103,12 +128,17 @@ ${enumToGlobals(OBJ_TYPE)}
   (i32.store
     (i32.add
       (local.get $ptr)
-      (i32.const 8)) ;; *chunk
+      (i32.const 8)) ;; upvalue_count
+    (i32.const 0))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 12)) ;; *chunk
     (call $init_chunk))
   (i32.store
     (i32.add
       (local.get $ptr)
-      (i32.const 12)) ;; *name
+      (i32.const 16)) ;; *name
     (i32.const 0))
   (call $obj_val
     (local.get $ptr)))
@@ -133,6 +163,7 @@ ${enumToGlobals(OBJ_TYPE)}
   (param $funcptr i32)
   (result f64)
   (local $ptr i32)
+  (local $upvalue_count i32)
   (local.set $ptr
     (call $alloc
       (i32.const 2)))
@@ -144,6 +175,16 @@ ${enumToGlobals(OBJ_TYPE)}
       (local.get $ptr)
       (i32.const 4)) ;; *function
     (local.get $funcptr))
+  (local.set $upvalue_count
+    (call $get_upvalue_count
+      (call $obj_val
+        (local.get $funcptr))))
+  (i32.store
+    (i32.add
+      (local.get $ptr)
+      (i32.const 8)) ;; **upvalue
+    (call $alloc
+      (local.get $upvalue_count)))
   (call $obj_val
     (local.get $ptr)))
 (func $is_string
@@ -239,6 +280,23 @@ ${enumToGlobals(OBJ_TYPE)}
         (local.get $v))
       (i32.const 4)) ;; arity
     (local.get $arity)))
+(func $get_upvalue_count
+  (param $v f64)
+  (result i32)
+  (i32.load
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 8)))) ;; upvalue_count
+(func $set_upvalue_count
+  (param $v f64)
+  (param $upvalue_count i32)
+  (i32.store
+    (i32.add
+      (call $as_obj
+        (local.get $v))
+      (i32.const 8)) ;; upvalue_count
+    (local.get $upvalue_count)))
 (func $get_chunk
   (param $v f64)
   (result i32)
@@ -246,7 +304,7 @@ ${enumToGlobals(OBJ_TYPE)}
     (i32.add
       (call $as_obj
         (local.get $v))
-      (i32.const 8)))) ;; *chunk
+      (i32.const 12)))) ;; *chunk
 (func $get_name
   (param $v f64)
   (result i32)
@@ -254,7 +312,7 @@ ${enumToGlobals(OBJ_TYPE)}
     (i32.add
       (call $as_obj
         (local.get $v))
-      (i32.const 12)))) ;; name
+      (i32.const 16)))) ;; name
 (func $set_name
   (param $v f64)
   (param $name i32)
@@ -262,7 +320,7 @@ ${enumToGlobals(OBJ_TYPE)}
     (i32.add
       (call $as_obj
         (local.get $v))
-      (i32.const 12)) ;; name
+      (i32.const 16)) ;; name
     (local.get $name)))
 (func $get_native
   (param $v f64)
@@ -281,6 +339,74 @@ ${enumToGlobals(OBJ_TYPE)}
         (call $as_obj
           (local.get $v))
         (i32.const 4))))) ;; *function
+(func $get_upvalue
+  (param $v f64)
+  (param $i i32)
+  (result f64)
+  (call $obj_val
+    (i32.load
+      (i32.add
+        (i32.load
+          (i32.add
+            (call $as_obj
+              (local.get $v))
+            (i32.const 8))) ;; **upvalue
+        (i32.mul
+          (local.get $i)
+          (i32.const 4))))))
+(func $set_upvalue
+  (param $v f64)
+  (param $i i32)
+  (param $upvalue f64)
+  (i32.store
+    (i32.add
+      (i32.load
+        (i32.add
+          (call $as_obj
+            (local.get $v))
+          (i32.const 8))) ;; **upvalue
+      (i32.mul
+        (local.get $i)
+        (i32.const 4)))
+    (call $as_obj
+      (local.get $upvalue))))
+(func $get_upvalue_value
+  (param $v f64)
+  (param $i i32)
+  (result f64)
+  (call $obj_val
+    (i32.load
+      (i32.add
+        (i32.load
+          (i32.add
+            (i32.load
+              (i32.add
+                (call $as_obj
+                  (local.get $v))
+                (i32.const 8))) ;; **upvalue
+            (i32.mul
+              (local.get $i)
+              (i32.const 4))))
+        (i32.const 4))))) ;; *value
+(func $set_upvalue_value
+  (param $v f64)
+  (param $i i32)
+  (param $value f64)
+  (i32.store
+    (i32.add
+      (i32.load
+        (i32.add
+          (i32.load
+            (i32.add
+              (call $as_obj
+                (local.get $v))
+              (i32.const 8))) ;; **upvalue
+          (i32.mul
+            (local.get $i)
+            (i32.const 4))))
+      (i32.const 4)) ;; *value
+    (call $as_obj
+      (local.get $value))))
 (func $copy_string
   (param $start i32)
   (param $len i32)

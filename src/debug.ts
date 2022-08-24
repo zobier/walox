@@ -52,6 +52,9 @@ export default `;;wasm
   (param $i i32)
   (result i32)
   (local $code i32)
+  (local $function f64)
+  (local $upvalue_count i32)
+  (local $j i32)
   (local.set $code
     (i32.load8_u
       (call $get_codeptr
@@ -81,7 +84,6 @@ ${watSwitch(
     [OP_CODES.OP_DEFINE_GLOBAL, ''],
     [OP_CODES.OP_GET_GLOBAL, ''],
     [OP_CODES.OP_SET_GLOBAL, ''],
-    [OP_CODES.OP_CLOSURE, ''],
     [
       OP_CODES.OP_CONSTANT,
       `;;wasm
@@ -94,6 +96,54 @@ ${watSwitch(
                 (i32.add
                   (local.get $i)
                   (i32.const 1)))))))
+      (br $break)`,
+    ],
+    [
+      OP_CODES.OP_CLOSURE, // todo: print upvalues
+      `;;wasm
+      (local.set $function
+        (call $get_value
+          (i32.load8_u
+            (call $get_codeptr
+              (local.get $chunk)
+              (local.tee $i
+                (i32.add
+                  (local.get $i)
+                  (i32.const 1)))))))
+      (call $print_value
+        (local.get $function))
+      (local.set $upvalue_count
+        (call $get_upvalue_count
+          (local.get $function)))
+      (local.set $j
+        (i32.const 0))
+      (block $out
+        (loop $loop
+          (br_if $out
+            (i32.ge_u
+              (local.get $j)
+              (local.get $upvalue_count)))
+          (call $logNum
+            (i32.load8_u
+              (call $get_codeptr
+                (local.get $chunk)
+                (local.tee $i
+                  (i32.add
+                    (local.get $i)
+                    (i32.const 1))))))
+          (call $logNum
+            (i32.load8_u
+              (call $get_codeptr
+                (local.get $chunk)
+                (local.tee $i
+                  (i32.add
+                    (local.get $i)
+                    (i32.const 1))))))
+          (local.set $j
+            (i32.add
+              (local.get $j)
+              (i32.const 1)))
+          (br $loop)))
       (br $break)`,
     ],
     [OP_CODES.OP_JUMP, ''],

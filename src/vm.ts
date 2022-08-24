@@ -160,6 +160,57 @@ ${enumToGlobals(INTERPRET_RESULT)}
               (call $get_native
                 (local.get $callee))))))
       (local.get $frame))))
+(func $capture_upvalues
+  (param $closure f64)
+  (param $frameptr i32)
+  (local $upvalue_count i32)
+  (local $i i32)
+  (local $is_local i32)
+  (local $index i32)
+  (local $upvalue f64)
+  (local.set $upvalue_count
+    (call $get_upvalue_count
+      (call $get_closure_function
+        (local.get $closure))))
+  (local.set $i
+    (i32.const 0))
+  (block $out
+    (loop $loop
+      (br_if $out
+        (i32.ge_u
+          (local.get $i)
+          (local.get $upvalue_count)))
+      (local.set $is_local
+        (call $read_byte
+          (local.get $frameptr)))
+      (local.set $index
+        (call $read_byte
+          (local.get $frameptr)))
+      (if
+        (local.get $is_local)
+        (then
+          (local.set $upvalue
+            (call $new_upvalue
+              (call $get_slot
+                (local.get $frameptr)
+                (local.get $index)))))
+        (else
+          (local.set $upvalue
+            (call $get_upvalue
+              (call $obj_val
+                (i32.load
+                  (local.get $frameptr)))
+              (local.get $index)))))
+      (call $set_upvalue
+        (local.get $closure)
+        (local.get $i)
+        (local.get $upvalue))
+      (local.set $i
+        (i32.add
+          (local.get $i)
+          (i32.const 1)))
+      (br $loop)))
+  )
 (func $interpret
   (param $srcptr i32)
   (result i32)
@@ -289,6 +340,31 @@ ${indent(
           (call $peek
             (i32.const 0)))
         (br $break)`,
+      ],
+      [
+        OP_CODES.OP_GET_UPVALUE,
+        `;;wasm
+        (call $push
+          (call $get_upvalue_value
+            (call $obj_val
+              (i32.load
+                (local.get $frame)))
+            (call $read_byte
+              (local.get $frame))))
+      (br $break)`
+      ],
+      [
+        OP_CODES.OP_SET_UPVALUE,
+        `;;wasm
+        (call $set_upvalue_value
+          (call $obj_val
+            (i32.load
+              (local.get $frame)))
+          (call $read_byte
+            (local.get $frame))
+          (call $peek
+            (i32.const 0)))
+      (br $break)`
       ],
       [
         OP_CODES.OP_NOT,
@@ -508,12 +584,17 @@ ${indent(
       [
         OP_CODES.OP_CLOSURE,
         `;;wasm
-        (call $push
+        (local.set $tmp
           (call $new_closure
             (call $as_obj
               (call $get_value
                 (call $read_byte
                   (local.get $frame))))))
+        (call $push
+          (local.get $tmp))
+        (call $capture_upvalues
+          (local.get $tmp)
+          (local.get $frame))
         (br $break)`,
       ],
       [

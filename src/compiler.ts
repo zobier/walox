@@ -22,10 +22,15 @@ ${enumToGlobals(PRECEDENCE)}
   i32 depth
 } Local
 typedef struct {
+  i32 is_local;
+  i32 index;
+} Upvalue
+typedef struct {
   i32 *enclosing
   i32 *function
   i32 *locals
   i32 local_count
+  i32 *upvalues
   i32 scope_depth
 } Compiler ;)
 (global $previous
@@ -53,7 +58,7 @@ typedef struct {
   (local $compiler i32)
   (local.set $compiler
     (call $alloc
-      (i32.const 5)))
+      (i32.const 6)))
   (i32.store
     (local.get $compiler) ;; *enclosing
     (global.get $compiler))
@@ -69,6 +74,12 @@ typedef struct {
       (i32.const 8)) ;; *locals
     (call $alloc
       (i32.const 512)))
+  (i32.store
+    (i32.add
+      (local.get $compiler)
+      (i32.const 16)) ;; *upvalues
+    (call $alloc
+      (i32.const 512)))
   (global.set $compiler
     (local.get $compiler))
   (call $add_local
@@ -77,47 +88,59 @@ typedef struct {
         (call $alloc
           (i32.const 0)))))) ;; ""
 (func $get_enclosing
+  (param $compiler i32)
   (result i32)
   (i32.load
-    (global.get $compiler))) ;; *enclosing
+    (local.get $compiler))) ;; *enclosing
 (func $get_function
+  (param $compiler i32)
   (result f64)
   (call $obj_val
     (i32.load
       (i32.add
-        (global.get $compiler)
+        (local.get $compiler)
         (i32.const 4))))) ;; *function
 (func $get_locals
+  (param $compiler i32)
   (result i32)
   (i32.load
     (i32.add
-      (global.get $compiler)
+      (local.get $compiler)
       (i32.const 8)))) ;; *locals
 (func $get_local_count
+  (param $compiler i32)
   (result i32)
   (i32.load
     (i32.add
-      (global.get $compiler)
+      (local.get $compiler)
       (i32.const 12)))) ;; local_count
 (func $set_local_count
+  (param $compiler i32)
   (param $count i32)
   (i32.store
     (i32.add
-      (global.get $compiler)
+      (local.get $compiler)
       (i32.const 12)) ;; local_count
     (local.get $count)))
+(func $get_upvalues
+  (param $compiler i32)
+  (result i32)
+  (i32.load
+    (i32.add
+      (local.get $compiler)
+      (i32.const 16)))) ;; *upvalues
 (func $get_scope_depth
   (result i32)
   (i32.load
     (i32.add
       (global.get $compiler)
-      (i32.const 16)))) ;; scope_depth
+      (i32.const 20)))) ;; scope_depth
 (func $set_scope_depth
   (param $depth i32)
   (i32.store
     (i32.add
       (global.get $compiler)
-      (i32.const 16)) ;; scope_depth
+      (i32.const 20)) ;; scope_depth
     (local.get $depth)))
 (func $advance
   (global.set $previous
@@ -165,7 +188,8 @@ typedef struct {
   (param $b i32)
   (call $write_chunk
     (call $get_chunk
-      (call $get_function))
+      (call $get_function
+        (global.get $compiler)))
     (local.get $b)))
 (func $emit_bytes
   (param $a i32)
@@ -173,7 +197,8 @@ typedef struct {
   (local $chunk i32)
   (local.set $chunk
     (call $get_chunk
-      (call $get_function)))
+      (call $get_function
+        (global.get $compiler))))
   (call $write_chunk
     (local.get $chunk)
     (local.get $a))
@@ -366,13 +391,15 @@ ${indent(
       (global.get $prev_start)
       (global.get $prev_len))))
 (func $resolve_local
+  (param $compiler i32)
   (param $nameptr i32)
   (result i32)
   (local $i i32)
   (local $localptr i32)
   (local.set $i
     (i32.sub
-      (call $get_local_count)
+      (call $get_local_count
+        (local.get $compiler))
       (i32.const 1)))
   (block $out
     (loop $loop
@@ -384,10 +411,11 @@ ${indent(
         (local.tee $localptr
           (i32.load
             (i32.add
-              (call $get_locals)
+              (call $get_locals
+                (local.get $compiler))
               (i32.mul
                 (local.get $i)
-                (i32.const 8))))) ;; *name
+                (i32.const 8))))) ;; sizeof Local
         (then
           (if
             (call $str_cmp
@@ -406,15 +434,135 @@ ${indent(
             (i32.const 1)))
         (br $loop)))
   (i32.const -1))
+(func $add_upvalue
+  (param $compiler i32)
+  (param $index i32)
+  (param $is_local i32)
+  (result i32)
+  (local $function f64)
+  (local $upvalue_count i32)
+  (local $upvalues i32)
+  (local $i i32)
+  (local $upvalueptr i32)
+  (local.set $function
+    (call $get_function
+      (local.get $compiler)))
+  (local.set $upvalue_count
+    (call $get_upvalue_count ;; should check this is < 256
+      (local.get $function)))
+  (local.set $upvalues
+    (call $get_upvalues
+      (local.get $compiler)))
+  (local.set $i
+    (i32.const 0))
+  (block $out
+    (loop $loop
+      (br_if $out
+        (i32.ge_u
+          (local.get $i)
+          (local.get $upvalue_count)))
+      (local.set $upvalueptr
+        (i32.add
+          (local.get $upvalues)
+          (i32.mul
+            (local.get $i)
+            (i32.const 8)))) ;; sizeof Upvalue
+      (if
+        (i32.and
+          (i32.eq
+            (i32.load
+              (local.get $upvalueptr)) ;; is_local
+            (local.get $is_local))
+          (i32.eq
+            (i32.load
+              (i32.add
+                (local.get $upvalueptr)
+                (i32.const 4))) ;; index
+            (local.get $index)))
+        (then
+          (return
+            (local.get $i))))
+      (local.set $i
+        (i32.add
+          (local.get $i)
+          (i32.const 1)))
+      (br $loop)))
+  (local.set $upvalueptr
+    (i32.add
+      (local.get $upvalues)
+      (i32.mul
+        (local.get $upvalue_count)
+        (i32.const 8)))) ;; sizeof Upvalue
+  (i32.store
+    (local.get $upvalueptr) ;; is_local
+    (local.get $is_local))
+  (i32.store
+    (i32.add
+      (local.get $upvalueptr)
+      (i32.const 4)) ;; index
+    (local.get $index))
+  (call $set_upvalue_count
+    (local.get $function)
+    (i32.add
+      (local.get $upvalue_count)
+      (i32.const 1)))
+  (local.get $upvalue_count))
+(func $resolve_upvalue
+  (param $compiler i32)
+  (param $nameptr i32)
+  (result i32)
+  (local $enclosing i32)
+  (local $local i32)
+  (local $upvalue i32)
+  (local.set $enclosing
+    (call $get_enclosing
+      (local.get $compiler)))
+  (if
+    (i32.eqz
+      (local.get $enclosing))
+    (then
+      (return
+        (i32.const -1))))
+  (local.set $local
+    (call $resolve_local
+      (local.get $enclosing)
+      (local.get $nameptr)))
+  (if
+    (i32.ne
+      (local.get $local)
+      (i32.const -1))
+    (then
+      (return
+        (call $add_upvalue
+          (local.get $compiler)
+          (local.get $local)
+          (i32.const 1)))))
+  (local.set $upvalue
+    (call $resolve_upvalue
+      (local.get $enclosing)
+      (local.get $nameptr)))
+  (if
+    (i32.ne
+      (local.get $upvalue)
+      (i32.const -1))
+    (then
+      (return
+        (call $add_upvalue
+          (local.get $compiler)
+          (local.get $upvalue)
+          (i32.const 0)))))
+  (i32.const -1))
 (func $add_local
   (param $nameptr i32)
   (local $localptr i32)
   (local.set $localptr
     (i32.add
-      (call $get_locals)
+      (call $get_locals
+        (global.get $compiler))
       (i32.mul
-        (call $get_local_count) ;; should check this is < 256
-        (i32.const 8)))) ;; *name
+        (call $get_local_count ;; should check this is < 256
+          (global.get $compiler))
+        (i32.const 8)))) ;; sizeof Local
   (i32.store
     (local.get $localptr)
     (local.get $nameptr))
@@ -424,8 +572,10 @@ ${indent(
       (i32.const 4)) ;; depth
     (call $get_scope_depth))
   (call $set_local_count
+    (global.get $compiler)
     (i32.add
-      (call $get_local_count)
+      (call $get_local_count
+        (global.get $compiler))
       (i32.const 1))))
 (func $declare_variable
   (call $add_local ;; todo: check if name already declared at $scope_depth
@@ -526,9 +676,14 @@ ${indent(
     (global.get $TOKEN_RIGHT_BRACE)))
 (func $function
   (local $function f64)
+  (local $upvalue_count i32)
+  (local $upvalues i32)
+  (local $i i32)
+  (local $upvalueptr i32)
   (call $init_compiler)
   (local.set $function
-    (call $get_function))
+    (call $get_function
+      (global.get $compiler)))
   (call $set_name
     (local.get $function)
     (call $as_obj
@@ -560,12 +715,44 @@ ${indent(
   (call $consume
     (global.get $TOKEN_LEFT_BRACE))
   (call $block)
+  (local.set $upvalues
+    (call $get_upvalues
+      (global.get $compiler)))
   (local.set $function
     (call $end_compiler))
   (call $emit_bytes
     (global.get $OP_CLOSURE)
     (call $write_value_array
-      (local.get $function))))
+      (local.get $function)))
+  (local.set $upvalue_count
+    (call $get_upvalue_count
+      (local.get $function)))
+  (local.set $i
+    (i32.const 0))
+  (block $out
+    (loop $loop
+      (br_if $out
+        (i32.ge_u
+          (local.get $i)
+          (local.get $upvalue_count)))
+      (local.set $upvalueptr
+        (i32.add
+          (local.get $upvalues)
+          (i32.mul
+            (local.get $i)
+            (i32.const 8)))) ;; sizeof Upvalue
+      (call $emit_bytes
+        (i32.load
+          (local.get $upvalueptr)) ;; is_local
+        (i32.load
+          (i32.add
+            (local.get $upvalueptr)
+            (i32.const 4)))) ;; index
+      (local.set $i
+        (i32.add
+          (local.get $i)
+          (i32.const 1)))
+      (br $loop))))
 (func $fun_declaration
   (local $global i32)
   (local.set $global
@@ -605,8 +792,9 @@ ${indent(
     (i32.const 0xff))
   (i32.sub
     (i32.load
-      (call $get_chunk
-      (call $get_function))) ;; count
+      (call $get_chunk ;; count
+        (call $get_function
+          (global.get $compiler))))
     (i32.const 2)))
 (func $patch_jump
   (param $offset i32)
@@ -615,20 +803,23 @@ ${indent(
     (i32.sub
       (i32.sub
         (i32.load
-          (call $get_chunk
-            (call $get_function))) ;; count
+          (call $get_chunk ;; count
+            (call $get_function
+              (global.get $compiler))))
         (local.get $offset))
       (i32.const 2)))
   (call $patch_chunk
     (call $get_chunk
-      (call $get_function))
+      (call $get_function
+        (global.get $compiler)))
     (local.get $offset)
     (i32.and
       (local.get $jump)
       (i32.const 0xff)))
   (call $patch_chunk
     (call $get_chunk
-      (call $get_function))
+      (call $get_function
+        (global.get $compiler)))
     (i32.add
       (local.get $offset)
       (i32.const 1))
@@ -674,8 +865,9 @@ ${indent(
     (i32.add
       (i32.sub
         (i32.load
-          (call $get_chunk
-            (call $get_function))) ;; count
+          (call $get_chunk ;; count
+            (call $get_function
+              (global.get $compiler))))
         (local.get $loop_start))
       (i32.const 2)))
   (call $emit_byte
@@ -693,8 +885,9 @@ ${indent(
   (local $exit_jump i32)
   (local.set $loop_start
     (i32.load
-      (call $get_chunk
-        (call $get_function)))) ;; count
+      (call $get_chunk ;; count
+        (call $get_function
+          (global.get $compiler)))))
   (call $consume
     (global.get $TOKEN_LEFT_PAREN))
   (call $expression)
@@ -734,8 +927,9 @@ ${indent(
           (call $expression_statement)))))
   (local.set $loop_start
     (i32.load
-      (call $get_chunk
-        (call $get_function)))) ;; count
+      (call $get_chunk ;; count
+        (call $get_function
+          (global.get $compiler)))))
   (local.set $exit_jump
     (i32.const -1))
   (if
@@ -761,8 +955,9 @@ ${indent(
           (global.get $OP_JUMP)))
       (local.set $increment_start
         (i32.load
-          (call $get_chunk
-            (call $get_function)))) ;; count
+          (call $get_chunk ;; count
+            (call $get_function
+              (global.get $compiler)))))
       (call $expression)
       (call $emit_byte
         (global.get $OP_POP))
@@ -878,15 +1073,19 @@ ${indent(
           (global.get $prev_len)
           (i32.const 2))))))
 (func $variable
+  (local $nameptr i32)
   (local $arg i32)
   (local $get_op i32)
   (local $set_op i32)
+  (local.set $nameptr
+    (call $as_obj
+      (call $copy_string
+        (global.get $prev_start)
+        (global.get $prev_len))))
   (local.set $arg
     (call $resolve_local
-      (call $as_obj
-        (call $copy_string
-          (global.get $prev_start)
-          (global.get $prev_len)))))
+      (global.get $compiler)
+      (local.get $nameptr)))
   (if
     (i32.ne
       (local.get $arg)
@@ -898,11 +1097,25 @@ ${indent(
         (global.get $OP_SET_LOCAL)))
     (else
       (local.set $arg
-        (call $identifier_constant))
-      (local.set $get_op
-        (global.get $OP_GET_GLOBAL))
-      (local.set $set_op
-        (global.get $OP_SET_GLOBAL))))
+        (call $resolve_upvalue
+          (global.get $compiler)
+          (local.get $nameptr)))
+      (if
+        (i32.ne
+          (local.get $arg)
+          (i32.const -1))
+        (then
+          (local.set $get_op
+            (global.get $OP_GET_UPVALUE))
+          (local.set $set_op
+            (global.get $OP_SET_UPVALUE)))
+        (else
+          (local.set $arg
+            (call $identifier_constant))
+          (local.set $get_op
+            (global.get $OP_GET_GLOBAL))
+          (local.set $set_op
+            (global.get $OP_SET_GLOBAL))))))
   (if
     (call $match_token
       (global.get $TOKEN_EQUAL)) ;; todo: check precedence <= PREC_ASSIGNMENT
@@ -1092,22 +1305,27 @@ ${indent(
       (br_if $out
         (i32.or
           (i32.eqz
-            (call $get_local_count))
+            (call $get_local_count
+              (global.get $compiler)))
           (i32.eq
             (i32.load
               (i32.add
                 (i32.add
-                  (call $get_locals)
+                  (call $get_locals
+                    (global.get $compiler))
                   (i32.mul
-                    (call $get_local_count)
-                    (i32.const 8)))
+                    (call $get_local_count
+                      (global.get $compiler))
+                    (i32.const 8))) ;; sizeof Local
                 (i32.const 4))) ;; depth
             (call $get_scope_depth))))
       (call $emit_byte
         (global.get $OP_POP))
       (call $set_local_count
+        (global.get $compiler)
         (i32.sub
-          (call $get_local_count)
+          (call $get_local_count
+            (global.get $compiler))
           (i32.const 1)))
       (br $pop_local))))
 (func $emit_return
@@ -1118,10 +1336,12 @@ ${indent(
   (result f64)
   (local $function f64)
   (local.set $function
-    (call $get_function))
+    (call $get_function
+      (global.get $compiler)))
   (call $emit_return)
   (global.set $compiler
-    (call $get_enclosing))
+    (call $get_enclosing
+      (global.get $compiler)))
   (local.get $function))
 (func $compile
   (param $srcptr i32)
