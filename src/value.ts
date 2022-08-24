@@ -196,7 +196,7 @@ export default `;;wasm
       (local.set $ptr
         (call $as_obj
           (local.get $v)))
-      (call $logString32
+      (call $logString
         (local.get $ptr)
         (call $get_len
           (local.get $ptr)))))

@@ -24,11 +24,10 @@ wabt().then(async (wabt) => {
   };
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
-  const memArray = new Uint8Array(mem.buffer);
-  const source = new TextEncoder().encode(`"foo"`);
-  const len = new Uint32Array([Math.ceil(source.length / 4) * 4]);
-  memArray.set(len)
-  memArray.set(source, 4);
+  const memArray = new Uint32Array(mem.buffer);
+  const source = Uint32Array.from(`"foo"`, c => c.codePointAt(0) || 0);
+  memArray.set([source.length]);
+  memArray.set(source, 1);
   const result = (instance.exports.main as Function)();
   // utilities.hexDump(0, 64);
   utilities.logInterpretResult(result);

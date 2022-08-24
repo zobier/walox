@@ -3,6 +3,9 @@ import { PRECEDENCE } from './compiler';
 import { TOKENS } from './scanner';
 import { INTERPRET_RESULT } from './vm';
 
+const getString = (buffer: ArrayBuffer, ptr: number, len: number) =>
+  String.fromCodePoint(...Array.from(new Uint32Array(buffer, ptr, len)));
+
 export const getUtil = (buffer: ArrayBuffer) => ({
   hexDump(ptr: number, len: number) {
     const padHex = (num: number, len = 2) =>
@@ -35,17 +38,10 @@ export const getUtil = (buffer: ArrayBuffer) => ({
     console.log(hex);
   },
   logString(ptr: number, len: number) {
-    const str = new TextDecoder().decode(
-      new Uint8Array(buffer, ptr, len)
-    );
-    console.log(str);
-  },
-  logString32(ptr: number, len: number) {
-    const str = String.fromCodePoint(...Array.from(new Uint32Array(buffer, ptr, len)));
-    console.log(str);
+    console.log(getString(buffer, ptr, len));
   },
   logChar(char: number) {
-    console.log(String.fromCharCode(char));
+    console.log(String.fromCodePoint(char));
   },
   logHex(num: number) {
     console.log(num.toString(16));
@@ -72,10 +68,7 @@ export const getUtil = (buffer: ArrayBuffer) => ({
     console.log(PRECEDENCE[prec] || prec);
   },
   stringToDouble(ptr: number, len: number) { // todo: implement stdlib functions
-    const str = new TextDecoder().decode(
-      new Uint8Array(buffer, ptr, len)
-    );
-    return parseFloat(str);
+    return parseFloat(getString(buffer, ptr, len));
   },
 });
 
@@ -85,9 +78,6 @@ export default `;;wasm
     (param i32 i32)))
 (import "util" "logString"
   (func $logString
-    (param i32 i32)))
-(import "util" "logString32"
-  (func $logString32
     (param i32 i32)))
 (import "util" "logChar"
   (func $logChar

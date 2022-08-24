@@ -25,8 +25,8 @@ export enum TOKENS {
 export default `;;wasm
 ${enumToGlobals(TOKENS)}
 (; typedef struct {
-  i8 *end;
-  i8 *current;
+  i32 *end;
+  i32 *current;
   i32 line;
 } Scanner ;)
 (global $scanner
@@ -42,8 +42,10 @@ ${enumToGlobals(TOKENS)}
     (local.get $this) ;; *end
     (i32.add
       (local.get $srcptr)
-      (call $get_len
-        (local.get $srcptr))))
+      (i32.mul
+        (call $get_len
+          (local.get $srcptr))
+        (i32.const 4))))
   (i32.store
     (i32.add
       (local.get $this)
@@ -69,10 +71,10 @@ ${enumToGlobals(TOKENS)}
       (return
         (i32.const 0))))
   (i32.eq
-    (i32.load8_u
+    (i32.load
       (i32.add
         (local.get $current)
-        (i32.const 1)))
+        (i32.const 4)))
     (local.get $expected)))
 (func $is_digit
   (param $char i32)
@@ -137,7 +139,7 @@ ${enumToGlobals(TOKENS)}
     (block $end_whitespace
       (loop $skip_whitespace
         (local.set $char
-          (i32.load8_u
+          (i32.load
             (local.get $current)))
         (if
           (i32.or
@@ -159,7 +161,7 @@ ${enumToGlobals(TOKENS)}
             (local.set $current
               (i32.add
                 (local.get $current)
-                (i32.const 1)))
+                (i32.const 4)))
             (br $skip_whitespace)))
           (if
             (i32.eq
@@ -176,7 +178,7 @@ ${enumToGlobals(TOKENS)}
                     (local.set $current
                       (i32.add
                         (local.get $current)
-                        (i32.const 1)))
+                        (i32.const 4)))
                     (if
                       (i32.eq
                         (local.get $current)
@@ -243,7 +245,7 @@ ${Object.entries({
             (local.set $current
               (i32.add
                 (local.get $current)
-                (i32.const 1)))
+                (i32.const 4)))
             (local.set $result
               (global.get ${token}_EQUAL)))
           (else
@@ -260,7 +262,7 @@ ${Object.entries({
           (local.set $current
             (i32.add
               (local.get $current)
-              (i32.const 1)))
+              (i32.const 4)))
           (if
             (i32.eq
               (local.get $current)
@@ -280,7 +282,7 @@ ${Object.entries({
               (local.set $current
                 (i32.add
                   (local.get $current)
-                  (i32.const 1))) ;; consume closing quote
+                  (i32.const 4))) ;; consume closing quote
               (br $out)))
           (br $consume_string))))
     (if
@@ -293,60 +295,60 @@ ${Object.entries({
               (i32.eq
                 (i32.add
                   (local.get $current)
-                  (i32.const 1))
+                  (i32.const 4))
                 (local.get $end))
               (then
                 (br $end_number)))
             (if
               (call $is_digit
-                (i32.load8_u
+                (i32.load
                   (i32.add
                     (local.get $current)
-                    (i32.const 1))))
+                    (i32.const 4))))
               (then
                 (local.set $current
                   (i32.add
                     (local.get $current)
-                    (i32.const 1)))
+                    (i32.const 4)))
                 (br $consume_number))))
           (if
             (i32.and
               (i32.eq
-                (i32.load8_u
+                (i32.load
                   (i32.add
                     (local.get $current)
-                    (i32.const 1)))
+                    (i32.const 4)))
                 (i32.const ${charToHex('.')}))
               (call $is_digit
-                (i32.load8_u
+                (i32.load
                   (i32.add
                     (local.get $current)
-                    (i32.const 2)))))
+                    (i32.const 8)))))
             (then
               (local.set $current
                 (i32.add
                   (local.get $current)
-                  (i32.const 2)))
+                  (i32.const 8)))
               (loop $consume_decimal
                 (if
                   (i32.eq
                     (i32.add
                       (local.get $current)
-                      (i32.const 1))
+                      (i32.const 4))
                     (local.get $end))
                   (then
                     (br $end_number)))
                 (if
                   (call $is_digit
-                    (i32.load8_u
+                    (i32.load
                       (i32.add
                         (local.get $current)
-                        (i32.const 1))))
+                        (i32.const 4))))
                   (then
                     (local.set $current
                       (i32.add
                         (local.get $current)
-                        (i32.const 1)))
+                        (i32.const 4)))
                     (br $consume_decimal)))))))
         (local.set $result
           (global.get $TOKEN_NUMBER))
@@ -361,15 +363,15 @@ ${Object.entries({
               (i32.eq
                 (i32.add
                   (local.get $current)
-                  (i32.const 1))
+                  (i32.const 4))
                 (local.get $end))
               (then
                 (br $end_identifier)))
             (local.set $char
-              (i32.load8_u
+              (i32.load
                 (i32.add
                   (local.get $current)
-                  (i32.const 1))))
+                  (i32.const 4))))
             (if
               (i32.or
                 (call $is_alpha
@@ -380,13 +382,15 @@ ${Object.entries({
                 (local.set $current
                   (i32.add
                     (local.get $current)
-                    (i32.const 1)))
+                    (i32.const 4)))
                 (br $consume_identifier)))))
         (local.set $len
           (i32.add
-            (i32.sub
-              (local.get $current)
-              (local.get $start))
+            (i32.div_u
+              (i32.sub
+                (local.get $current)
+                (local.get $start))
+              (i32.const 4))
             (i32.const 1)))
 ${Object.entries({
   '': {
@@ -414,9 +418,9 @@ ${Object.entries({
   const start = prefix ? `;;wasm
                   (i32.add
                     (local.get $start)
-                    (i32.const 1))` : `;;wasm
+                    (i32.const 4))` : `;;wasm
                   (local.get $start)`;
-  const offset = prefix ? 2 : 1;
+  const offset = prefix ? 8 : 4;
   const cases = Object.entries(alternatives)
     .map(([rest, token]) => {
       const keyword = prefix + rest;
@@ -426,7 +430,7 @@ ${Object.entries({
           (if
             (i32.and
               (i32.eq
-                (i32.load8_u
+                (i32.load
 ${start})
                 (i32.const ${charToHex(rest[0])}))
               (i32.eq
@@ -436,10 +440,10 @@ ${start})
 ${rest.slice(1).split('').map((c, i) => `;;wasm
               (if
                 (i32.ne
-                  (i32.load8_u
+                  (i32.load
                     (i32.add
                       (local.get $start)
-                      (i32.const ${i + offset})))
+                      (i32.const ${i * 4 + offset})))
                   (i32.const ${charToHex(c)}))
                 (then
                   (br $check_${keyword})))
@@ -453,7 +457,7 @@ ${rest.slice(1).split('').map((c, i) => `;;wasm
         (if
           (i32.and
             (i32.eq
-              (i32.load8_u
+              (i32.load
                 (local.get $start))
               (i32.const ${charToHex(prefix)}))
             (i32.gt_u
@@ -469,7 +473,7 @@ ${indent(cases, 4)}))` : cases;
   (local.set $current
     (i32.add
       (local.get $current)
-      (i32.const 1)))
+      (i32.const 4)))
   (i32.store
     (i32.add
       (local.get $this)
@@ -477,7 +481,9 @@ ${indent(cases, 4)}))` : cases;
       (local.get $current))
   (local.get $result)
   (local.get $start)
-  (i32.sub
-    (local.get $current)
-    (local.get $start)))
+  (i32.div_u
+    (i32.sub
+      (local.get $current)
+      (local.get $start))
+    (i32.const 4)))
 `;

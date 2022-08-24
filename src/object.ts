@@ -17,10 +17,12 @@ export default `;;wasm
         (i32.mul
           (local.get $i)
           (i32.const 4)))
-      (i32.load8_u
+      (i32.load
         (i32.add
           (local.get $start)
-          (local.get $i))))
+          (i32.mul
+            (local.get $i)
+            (i32.const 4)))))
     (br_if $copy
       (i32.lt_u
         (local.tee $i

@@ -19,8 +19,10 @@ wabt().then(async (wabt) => {
     (call $init_memory
       (i32.add
         (local.get $srcptr)
-        (call $get_len
-          (local.get $srcptr))))
+        (i32.mul
+          (call $get_len
+            (local.get $srcptr))
+          (i32.const 4))))
     (call $init_scanner
       (local.get $srcptr)))
   (export "scan_token"
@@ -39,10 +41,10 @@ wabt().then(async (wabt) => {
   };
   const instance = await WebAssembly.instantiate(module, importObject);
   console.log('--');
-  const memArray = new Uint8Array(mem.buffer);
-  const source = new TextEncoder().encode(`foo`);
-  memArray.set(new Uint32Array([source.length]))
-  memArray.set(source, 4);
+  const memArray = new Uint32Array(mem.buffer);
+  const source = Uint32Array.from(`"foo"`, c => c.codePointAt(0) || 0);
+  memArray.set([source.length]);
+  memArray.set(source, 1);
   (instance.exports.init as Function)(4);
   const [result, start, len] = (instance.exports.scan_token as Function)();
   console.log(start);
