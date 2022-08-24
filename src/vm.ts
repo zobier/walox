@@ -352,6 +352,7 @@ export default `;;wasm
   (local $frame i32)
   (local $code i32)
   (local $tmp f64)
+  (local $name f64)
   (local $offset i32)
   (local $arg_count i32)
   (local $result i32)
@@ -484,6 +485,10 @@ ${indent(
       [
         OP_CODES.OP_GET_PROPERTY,
         `;;wasm
+        (local.set $name
+          (call $get_value
+            (call $read_byte
+              (local.get $frame))))
         (if
           (f64.ne
             (local.tee $tmp
@@ -492,9 +497,7 @@ ${indent(
                   (f64.load
                     (call $peek
                       (i32.const 0))))
-                (call $get_value
-                  (call $read_byte
-                    (local.get $frame)))))
+                (local.get $name)))
             (f64.const 0)) ;; really need a better value for not found
           (then
             (drop
@@ -512,9 +515,7 @@ ${indent(
                           (f64.load
                             (call $peek
                               (i32.const 0))))))
-                    (call $get_value
-                      (call $read_byte
-                        (local.get $frame)))))
+                    (local.get $name)))
                 (f64.const 0))
               (then
                 (drop

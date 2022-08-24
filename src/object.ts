@@ -278,6 +278,13 @@ export default `;;wasm
   (local.set $ptr
     ${ObjBoundMethod.alloc()})
   ${ObjBoundMethod.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_BOUND_METHOD})`,
+  )}
+  ${ObjBoundMethod.set(
     'receiver',
     `;;wasm
     (local.get $ptr)`,
