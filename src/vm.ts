@@ -17,6 +17,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (local $result i32)
   (call $compile
     (local.get $srcptr))
+  (call $dissasemble)
   (local.set $ip
     (i32.const 0))
   (call $init_stack)

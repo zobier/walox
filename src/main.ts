@@ -11,7 +11,6 @@ export default `;;wasm
         (local.get $srcptr))))
   (call $init_chunk)
   (call $init_value_array)
-  ;; (call $dissasemble)
   (call $interpret
     (local.get $srcptr)))
 `;

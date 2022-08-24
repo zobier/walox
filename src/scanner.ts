@@ -298,7 +298,7 @@ ${Object.entries({
             (if
               (i32.eq
                 (i32.add
-                  (local.get $current)
+                  (local.get $current) ;; fix: consume_number is swallowing the following char
                   (i32.const 1))
                 (local.get $end))
               (then
