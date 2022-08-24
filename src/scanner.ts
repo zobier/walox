@@ -80,6 +80,16 @@ ${enumToGlobals(TOKENS)}
         (local.get $current)
         (i32.const 1)))
     (local.get $expected)))
+(func $is_digit
+  (param $char i32)
+  (result i32)
+  (i32.and
+    (i32.ge_u
+      (local.get $char)
+      (i32.const ${charToHex('0')}))
+    (i32.le_u
+      (local.get $char)
+      (i32.const ${charToHex('9')}))))
 (func $scan_token
   (result i32)
   (local $this i32)
@@ -109,7 +119,7 @@ ${enumToGlobals(TOKENS)}
         (local.set $result
           (global.get $TOKEN_EOF))
         (br $out)))
-    (block $done
+    (block $end_whitespace
       (loop $skip_whitespace
         (local.set $char
           (i32.load8_u
@@ -169,11 +179,11 @@ ${enumToGlobals(TOKENS)}
                         (br $skip_whitespace)))
                     (br $comment)))
                 (else
-                  (br $done))
+                  (br $end_whitespace))
               )
             )
           )
-        (br $done)))
+        (br $end_whitespace)))
 ${Object.entries({
   '(': '$TOKEN_LEFT_PAREN',
   ')': '$TOKEN_RIGHT_PAREN',
@@ -240,7 +250,7 @@ ${Object.entries({
               (local.get $end))
             (then
               (local.set $result
-                (global.get $TOKEN_EOF))
+                (global.get $TOKEN_EOF)) ;; expected '"' got EOF
               (br $out)))
           (if
             (call $match
@@ -256,6 +266,69 @@ ${Object.entries({
                   (i32.const 1))) ;; consume closing quote
               (br $out)))
           (br $consume_string))))
+    (if
+      (call $is_digit
+        (local.get $char))
+      (then
+        (block $end_number
+          (loop $consume_number
+            (if
+              (i32.eq
+                (i32.add
+                  (local.get $current)
+                  (i32.const 1))
+                (local.get $end))
+              (then
+                (br $end_number)))
+            (local.set $current
+              (i32.add
+                (local.get $current)
+                (i32.const 1)))
+            (local.set $char
+              (i32.load8_u
+                (local.get $current)))
+            (if
+              (call $is_digit
+                (local.get $char))
+              (then
+                (br $consume_number))))
+          (if
+            (i32.and
+              (i32.eq
+                (local.get $char)
+                (i32.const ${charToHex('.')}))
+              (call $is_digit
+                (i32.load8_u
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1)))))
+            (then
+              (local.set $current
+                (i32.add
+                  (local.get $current)
+                  (i32.const 1)))
+              (loop $consume_decimal
+                (if
+                  (i32.eq
+                    (i32.add
+                      (local.get $current)
+                      (i32.const 1))
+                    (local.get $end))
+                  (then
+                    (br $end_number)))
+                (local.set $current
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1)))
+                (if
+                  (call $is_digit
+                    (i32.load8_u
+                      (local.get $current)))
+                  (then
+                    (br $consume_decimal)))))))
+        (local.set $result
+          (global.get $TOKEN_NUMBER))
+        (br $out)))
   ) ;; out
   (local.set $start
       (local.get $current))
