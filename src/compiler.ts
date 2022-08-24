@@ -122,42 +122,44 @@ ${Object.entries({
                 (global.get $start)
                 (global.get $len))))
           (br $run)))
+      (block $switch_op
 ${Object.entries({
   '$TOKEN_MINUS': '$OP_SUBTRACT',
   '$TOKEN_PLUS': '$OP_ADD',
   '$TOKEN_SLASH': '$OP_DIVIDE',
   '$TOKEN_STAR': '$OP_MULTIPLY',
 }).map(([token, op]) => `;;wasm
-      (if
-        (i32.eq
-          (local.get $token)
-          (global.get ${token}))
-        (then
-          (local.set $op
-            (global.get ${op}))
-          (local.set $prec
-            (call $get_prec
-              (local.get $op)))
-          (loop $while_prec
-            (if
-              (i32.and
-                (call $not_empty
-                  (local.get $opstack))
-                (i32.ge_u
-                  (call $get_prec
-                    (call $peekop
-                      (local.get $opstack)))
-                  (local.get $prec)))
-              (then
-                (call $write_chunk
-                  (call $popop
-                    (local.get $opstack)))
-                (br $while_prec))))
-          (call $pushop
-            (local.get $opstack)
-            (local.get $op))
-          (br $run)))
+        (if
+          (i32.eq
+            (local.get $token)
+            (global.get ${token}))
+          (then
+            (local.set $op
+              (global.get ${op}))
+            (local.set $prec
+              (call $get_prec
+                (local.get $op)))
+            (br $switch_op)))
 `).join('')}
+      )
+      (loop $while_prec
+        (if
+          (i32.and
+            (call $not_empty
+              (local.get $opstack))
+            (i32.ge_u
+              (call $get_prec
+                (call $peekop
+                  (local.get $opstack)))
+              (local.get $prec)))
+          (then
+            (call $write_chunk
+              (call $popop
+                (local.get $opstack)))
+            (br $while_prec))))
+      (call $pushop
+        (local.get $opstack)
+        (local.get $op))
       (br $run)))
   (loop $while_ops
     (call $write_chunk
