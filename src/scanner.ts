@@ -127,7 +127,7 @@ ${enumToGlobals(TOKENS)}
         (i32.const 4)))) ;; *current
   (block $out
     (if
-      (i32.ge_u
+      (i32.eq
         (local.get $current)
         (local.get $end))
       (then
@@ -356,20 +356,20 @@ ${Object.entries({
         (local.get $char))
       (then
         (block $end_identifier
-          (loop $consume_identifier ;; fix: consume_identifier is swallowing next char
-            (local.set $current
-              (i32.add
-                (local.get $current)
-                (i32.const 1)))
+          (loop $consume_identifier
             (if
               (i32.eq
-                (local.get $current)
+                (i32.add
+                  (local.get $current)
+                  (i32.const 1))
                 (local.get $end))
               (then
                 (br $end_identifier)))
             (local.set $char
               (i32.load8_u
-                (local.get $current)))
+                (i32.add
+                  (local.get $current)
+                  (i32.const 1))))
             (if
               (i32.or
                 (call $is_alpha
@@ -377,11 +377,17 @@ ${Object.entries({
                 (call $is_digit
                   (local.get $char)))
               (then
+                (local.set $current
+                  (i32.add
+                    (local.get $current)
+                    (i32.const 1)))
                 (br $consume_identifier)))))
         (local.set $len
-          (i32.sub
-            (local.get $current)
-            (local.get $start)))
+          (i32.add
+            (i32.sub
+              (local.get $current)
+              (local.get $start))
+            (i32.const 1)))
 ${Object.entries({
   '': {
     'and': '$TOKEN_AND',
