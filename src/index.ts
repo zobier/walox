@@ -26,8 +26,10 @@ wabt()
     console.log('--');
     const memArray = new Uint32Array(mem.buffer);
     const source = Uint32Array.from(
-      `class Brioche {}
-      print Brioche();
+      `class Toast {}
+      var toast = Toast();
+      toast.jam = "grape";
+      print toast.jam;
       `,
       (c) => c.codePointAt(0) || 0,
     );

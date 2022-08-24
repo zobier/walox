@@ -267,6 +267,7 @@ ${indent(
     `;;wasm
     (local.get $operator)`,
     [
+      [TOKENS.TOKEN_DOT, ''],
       [
         TOKENS.TOKEN_LEFT_PAREN,
         `;;wasm
@@ -332,6 +333,11 @@ ${indent(
   (local.get $result))
 (func $parse_precedence
   (param $precedence i32)
+  (local $can_assign i32)
+  (local.set $can_assign
+    (i32.le_u
+      (local.get $precedence)
+      (i32.const ${PRECEDENCE.PREC_ASSIGNMENT})))
   (call $advance)
 ${indent(
   watSwitch(
@@ -374,7 +380,8 @@ ${indent(
       [
         TOKENS.TOKEN_IDENTIFIER,
         `;;wasm
-        (call $variable)
+        (call $variable
+          (local.get $can_assign))
         (br $break)`,
       ],
     ],
@@ -428,6 +435,14 @@ ${indent(
         TOKENS.TOKEN_OR,
         `;;wasm
         (call $or)
+        (br $break)
+        `,
+      ],
+      [
+        TOKENS.TOKEN_DOT,
+        `;;wasm
+        (call $dot
+          (local.get $can_assign))
         (br $break)
         `,
       ],
@@ -1172,6 +1187,7 @@ ${indent(
           (global.get $prev_len)
           (i32.const 2))))))
 (func $variable
+  (param $can_assign i32)
   (local $nameptr i32)
   (local $arg i32)
   (local $get_op i32)
@@ -1216,10 +1232,10 @@ ${indent(
           (local.set $set_op
             (i32.const ${OP_CODES.OP_SET_GLOBAL}))))))
   (if
-    (call $match_token
-      (i32.const ${
-        TOKENS.TOKEN_EQUAL
-      })) ;; todo: check precedence <= PREC_ASSIGNMENT
+    (i32.and
+      (local.get $can_assign)
+      (call $match_token
+        (i32.const ${TOKENS.TOKEN_EQUAL})))
     (then
       (call $expression)
       (call $emit_byte
@@ -1356,6 +1372,28 @@ ${indent(
   (call $emit_bytes
     (i32.const ${OP_CODES.OP_CALL})
     (call $arguments_list)))
+(func $dot
+  (param $can_assign i32)
+  (local $name i32)
+  (call $consume
+    (i32.const ${TOKENS.TOKEN_IDENTIFIER}))
+  (local.set $name
+    (call $identifier_constant))
+  (if
+    (i32.and
+      (local.get $can_assign)
+      (call $match_token
+        (i32.const ${TOKENS.TOKEN_EQUAL})))
+    (then
+      (call $expression)
+      (call $emit_bytes
+        (i32.const ${OP_CODES.OP_SET_PROPERTY})
+        (local.get $name)))
+    (else
+      (call $emit_bytes
+        (i32.const ${OP_CODES.OP_GET_PROPERTY})
+        (local.get $name))))
+  )
 (func $literal
   (local $literal i32)
   (local.set $literal

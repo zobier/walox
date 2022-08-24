@@ -526,6 +526,15 @@ export default `;;wasm
     (call $as_obj
       (local.get $v))`,
   )})
+(func $get_fields
+  (param $v f64)
+  (result i32)
+  ${ObjInstance.get(
+    '*fields',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $copy_string
   (param $start i32)
   (param $len i32)

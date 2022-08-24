@@ -424,6 +424,18 @@ ${indent(
         (br $break)`,
       ],
       [
+        OP_CODES.OP_SET_LOCAL,
+        `;;wasm
+        (call $set_slot
+          (local.get $frame)
+          (call $read_byte
+            (local.get $frame))
+          (f64.load
+            (call $peek
+              (i32.const 0))))
+        (br $break)`,
+      ],
+      [
         OP_CODES.OP_GET_GLOBAL,
         `;;wasm
         (call $push
@@ -446,18 +458,6 @@ ${indent(
         (br $break)`,
       ],
       [
-        OP_CODES.OP_SET_LOCAL,
-        `;;wasm
-        (call $set_slot
-          (local.get $frame)
-          (call $read_byte
-            (local.get $frame))
-          (f64.load
-            (call $peek
-              (i32.const 0))))
-        (br $break)`,
-      ],
-      [
         OP_CODES.OP_SET_GLOBAL,
         `;;wasm
         (call $table_set ;; todo: check if not exists (new key)
@@ -468,6 +468,46 @@ ${indent(
           (f64.load
             (call $peek
               (i32.const 0))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_GET_PROPERTY,
+        `;;wasm
+        (local.set $tmp
+          (call $table_get
+            (call $get_fields
+              (f64.load
+                (call $peek
+                  (i32.const 0))))
+            (call $get_value
+              (call $read_byte
+                (local.get $frame)))))
+        ;; todo: error if undefined property or not instance
+        (call $pop)
+        (call $push
+          (local.get $tmp))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_SET_PROPERTY,
+        `;;wasm
+        (call $table_set
+          (call $get_fields
+            (f64.load
+              (call $peek
+                (i32.const 1))))
+          (call $get_value
+            (call $read_byte
+              (local.get $frame)))
+          (f64.load
+            (call $peek
+              (i32.const 0))))
+        ;; todo: error if not instance
+        (local.set $tmp
+          (call $pop))
+        (call $pop)
+        (call $push
+          (local.get $tmp))
         (br $break)`,
       ],
       [
