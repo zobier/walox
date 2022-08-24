@@ -532,6 +532,79 @@ ${indent(
     (local.get $exit_jump))
   (call $write_chunk
     (global.get $OP_POP)))
+(func $for_statement
+  (local $loop_start i32)
+  (local $exit_jump i32)
+  (local $body_jump i32)
+  (local $increment_start i32)
+  (call $begin_scope)
+  (call $consume
+    (global.get $TOKEN_LEFT_PAREN))
+  (if
+    (i32.eqz
+      (call $match_token
+        (global.get $TOKEN_SEMICOLON)))
+    (then
+      (if
+        (call $match_token
+          (global.get $TOKEN_VAR))
+        (then
+          (call $var_declaration))
+        (else
+          (call $expression_statement)))))
+  (local.set $loop_start
+    (i32.load
+      (global.get $chunk))) ;; count
+  (local.set $exit_jump
+    (i32.const -1))
+  (if
+    (i32.eqz
+      (call $match_token
+        (global.get $TOKEN_SEMICOLON)))
+    (then
+      (call $expression)
+      (call $consume
+        (global.get $TOKEN_SEMICOLON))
+      (local.set $exit_jump
+        (call $emit_jump
+          (global.get $OP_JUMP_IF_FALSE)))
+      (call $write_chunk
+        (global.get $OP_POP))))
+  (if
+    (i32.eqz
+      (call $match_token
+        (global.get $TOKEN_RIGHT_PAREN)))
+    (then
+      (local.set $body_jump
+        (call $emit_jump
+          (global.get $OP_JUMP)))
+      (local.set $increment_start
+        (i32.load
+          (global.get $chunk))) ;; count
+      (call $expression)
+      (call $write_chunk
+        (global.get $OP_POP))
+      (call $consume
+        (global.get $TOKEN_RIGHT_PAREN))
+      (call $emit_loop
+        (local.get $loop_start))
+      (local.set $loop_start
+        (local.get $increment_start))
+      (call $patch_jump
+        (local.get $body_jump))))
+  (call $statement)
+  (call $emit_loop
+    (local.get $loop_start))
+  (if
+    (i32.ne
+      (local.get $exit_jump)
+      (i32.const -1))
+    (then
+      (call $patch_jump
+        (local.get $exit_jump))
+      (call $write_chunk
+        (global.get $OP_POP))))
+  (call $end_scope))
 (func $print_statement
   (call $expression)
   (call $consume
@@ -555,25 +628,31 @@ ${indent(
     (else
       (if
         (call $match_token
-          (global.get $TOKEN_IF))
+          (global.get $TOKEN_FOR))
         (then
-          (call $if_statement))
+          (call $for_statement))
         (else
           (if
             (call $match_token
-              (global.get $TOKEN_WHILE))
+              (global.get $TOKEN_IF))
             (then
-              (call $while_statement))
+              (call $if_statement))
             (else
               (if
                 (call $match_token
-                  (global.get $TOKEN_LEFT_BRACE))
+                  (global.get $TOKEN_WHILE))
                 (then
-                  (call $begin_scope)
-                  (call $block)
-                  (call $end_scope))
+                  (call $while_statement))
                 (else
-                  (call $expression_statement))))))))))
+                  (if
+                    (call $match_token
+                      (global.get $TOKEN_LEFT_BRACE))
+                    (then
+                      (call $begin_scope)
+                      (call $block)
+                      (call $end_scope))
+                    (else
+                      (call $expression_statement))))))))))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))
