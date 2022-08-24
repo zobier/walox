@@ -133,6 +133,20 @@ ${indent(
           (global.get $PREC_COMPARISON))
         (br $break)`,
       ],
+      [
+        TOKENS.TOKEN_AND,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_AND))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_OR,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_OR))
+        (br $break)`,
+      ],
     ],
     `;;wasm
     (local.set $result
@@ -221,6 +235,20 @@ ${indent(
         `;;wasm
         (call $binary)
         (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_AND,
+        `;;wasm
+        (call $and)
+        (br $break)
+        `,
+      ],
+      [
+        TOKENS.TOKEN_OR,
+        `;;wasm
+        (call $or)
+        (br $break)
+        `,
       ],
     ],
   ),
@@ -326,6 +354,34 @@ ${indent(
         (global.get $OP_DEFINE_GLOBAL))
       (call $write_chunk
         (local.get $global)))))
+(func $and
+  (local $end_jump i32)
+  (local.set $end_jump
+    (call $emit_jump
+      (global.get $OP_JUMP_IF_FALSE)))
+  (call $write_chunk
+    (global.get $OP_POP))
+  (call $parse_precedence
+    (global.get $PREC_AND))
+  (call $patch_jump
+    (local.get $end_jump)))
+(func $or
+  (local $else_jump i32)
+  (local $end_jump i32)
+  (local.set $else_jump
+    (call $emit_jump
+      (global.get $OP_JUMP_IF_FALSE)))
+  (local.set $end_jump
+    (call $emit_jump
+      (global.get $OP_JUMP)))
+  (call $patch_jump
+    (local.get $else_jump))
+  (call $write_chunk
+    (global.get $OP_POP))
+  (call $parse_precedence
+    (global.get $PREC_OR))
+  (call $patch_jump
+    (local.get $end_jump)))
 (func $expression
   (call $parse_precedence
     (global.get $PREC_ASSIGNMENT)))
