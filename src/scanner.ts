@@ -113,6 +113,7 @@ ${enumToGlobals(TOKENS)}
   (local $end i32)
   (local $current i32)
   (local $char i32)
+  (local $len i32)
   (local $result i32)
   (local.set $this
     (global.get $scanner))
@@ -374,6 +375,48 @@ ${Object.entries({
                   (local.get $char)))
               (then
                 (br $consume_identifier)))))
+      (local.set $len
+        (i32.sub
+          (local.get $current)
+          (local.get $start)))
+${Object.entries({
+  'and': '$TOKEN_AND',
+  'class': '$TOKEN_CLASS',
+  'else': '$TOKEN_ELSE',
+  'if': '$TOKEN_IF',
+  'nil': '$TOKEN_NIL',
+  'or': '$TOKEN_OR',
+  'print': '$TOKEN_PRINT',
+  'return': '$TOKEN_RETURN',
+  'var': '$TOKEN_VAR',
+  'while': '$TOKEN_WHILE',
+}).map(([keyword, token]) => `;;wasm
+      (block $check_${keyword}
+        (if
+          (i32.and
+            (i32.eq
+              (i32.load8_u
+                (local.get $start))
+              (i32.const ${charToHex(keyword[0])}))
+            (i32.eq
+              (local.get $len)
+              (i32.const ${keyword.length})))
+          (then
+${keyword.slice(1).split('').map((c, i) => `;;wasm
+            (if
+              (i32.ne
+                (i32.load8_u
+                  (i32.add
+                    (local.get $start)
+                    (i32.const ${i + 1})))
+                (i32.const ${charToHex(c)}))
+              (then
+                (br $check_${keyword})))
+`).join('')}
+        (local.set $result
+          (global.get ${token}))
+        (br $out))))
+`).join('')}
       (local.set $result
         (global.get $TOKEN_IDENTIFIER))
       (br $out)))
@@ -382,7 +425,7 @@ ${Object.entries({
     (i32.add
       (local.get $current)
       (i32.const 1)))
-  (if
+  (;if
     (i32.ne
       (local.get $result)
       (global.get $TOKEN_EOF))
@@ -391,7 +434,7 @@ ${Object.entries({
         (local.get $start)
         (i32.sub
           (local.get $current)
-          (local.get $start)))))
+          (local.get $start))));)
   (i32.store
     (i32.add
       (local.get $this)

@@ -5,4 +5,9 @@ export const enumToGlobals = (e: object) => Object.keys(e)
   (i32.const ${e[op as keyof typeof e]}))`
   ).join('\n');
 
-export const charToHex = (c: string) => `0x${c.charCodeAt(0).toString(16)} (; '${c}' ;)`;
+export const charToHex = (c: string) => {
+  const code = c.charCodeAt(0);
+
+  return '0x' + code.toString(16) +
+    (code >= 32 ? ` (; '${c}' ;)` : '');
+};
