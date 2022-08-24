@@ -150,4 +150,5 @@ typedef struct {
     (i32.add
       (local.get $entryptr)
       (i32.const 4))))
+;; todo: table_delete key
 `;

@@ -70,6 +70,9 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   stringToDouble(ptr: number, len: number) { // todo: implement stdlib functions
     return parseFloat(getString(buffer, ptr, len));
   },
+  tokenError(expected: number, got: number) {
+    console.log(`Token error: expected ${TOKENS[expected]} got ${TOKENS[got]}`);
+  },
 });
 
 export default `;;wasm
@@ -112,4 +115,7 @@ export default `;;wasm
   (func $stringToDouble
     (param i32 i32)
     (result f64)))
+(import "util" "tokenError"
+  (func $tokenError
+    (param i32 i32)))
 `;

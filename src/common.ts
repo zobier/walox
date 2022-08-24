@@ -9,6 +9,7 @@ export const watSwitch = (
   label: string,
   condition: (value: string) => string,
   cases: (label: string) => Record<string, string>,
+  default_case: string = '',
 ) => {
   return `;;wasm
 (block ${label}
@@ -18,6 +19,7 @@ ${Object.entries(cases(label)).map(([value, subsequent]) => `;;wasm
     (then
       ${subsequent}))
 `).join('')}
+${default_case}
 )`;
 };
 

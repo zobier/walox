@@ -17,7 +17,6 @@ export enum OP_CODES {
   OP_DIVIDE,
   OP_NOT,
   OP_NEGATE,
-  OP_GROUP,
   OP_RETURN,
 }
 

@@ -1,4 +1,4 @@
-import { enumToGlobals } from "./common";
+import { enumToGlobals, indent, watSwitch } from "./common";
 
 export enum PRECEDENCE {
   PREC_NONE,
@@ -16,259 +16,204 @@ export enum PRECEDENCE {
 
 export default `;;wasm
 ${enumToGlobals(PRECEDENCE)}
-(func $pushop
-  (param $opstack i32)
-  (param $value i32)
-  (local $top_of_stack i32)
-  (local.set $top_of_stack
-    (i32.load
-      (local.get $opstack)))
-  (i32.store
-    (local.get $top_of_stack)
-    (local.get $value))
-  (i32.store
-    (local.get $opstack)
-    (i32.add
-      (local.get $top_of_stack)
-      (i32.const 4))))
-(func $popop
-  (param $opstack i32)
-  (result i32)
-  (local $top_of_stack i32)
-  (local.set $top_of_stack
-    (i32.sub
-      (i32.load
-        (local.get $opstack))
-      (i32.const 4)))
-  (i32.store
-    (local.get $opstack)
-    (local.get $top_of_stack))
-  (i32.load
-    (local.get $top_of_stack)))
-(func $peekop
-  (param $opstack i32)
-  (result i32)
-  (i32.load ;; needs bounds check
-    (i32.sub
-      (i32.load
-        (local.get $opstack))
-      (i32.const 4))))
-(func $not_empty
-  (param $opstack i32)
-  (result i32)
-  (i32.gt_u
-    (i32.load
-      (local.get $opstack))
-    (i32.add
-      (local.get $opstack)
-      (i32.const 4))))
-(func $get_prec
+(global $previous
+  (mut i32)
+  (i32.const 0))
+(global $prev_start
+  (mut i32)
+  (i32.const 0))
+(global $prev_len
+  (mut i32)
+  (i32.const 0))
+(global $current
+  (mut i32)
+  (i32.const 0))
+(global $cur_start
+  (mut i32)
+  (i32.const 0))
+(global $cur_len
+  (mut i32)
+  (i32.const 0))
+(func $advance
+  (global.set $previous
+    (global.get $current))
+  (global.set $prev_start
+    (global.get $cur_start))
+  (global.set $prev_len
+    (global.get $cur_len))
+  (global.set $current
+    (global.set $cur_start
+      (global.set $cur_len
+        (call $scan_token)))))
+(func $consume
+  (param $expected i32)
+  (if
+    (i32.eq
+      (global.get $current)
+      (local.get $expected))
+    (then
+      (call $advance))
+    (else
+      (call $tokenError
+        (local.get $expected)
+        (global.get $current)))))
+(func $get_precedence
   (param $operator i32)
   (result i32)
   (local $result i32)
-  (block $out
-${Object.entries({
-  '$OP_SUBTRACT': '$PREC_TERM',
-  '$OP_ADD': '$PREC_TERM',
-  '$OP_DIVIDE': '$PREC_FACTOR',
-  '$OP_MULTIPLY': '$PREC_FACTOR',
-  '$OP_NEGATE': '$PREC_UNARY',
-  '$OP_NOT': '$PREC_UNARY',
-  '$OP_NOT_EQUAL': '$PREC_EQUALITY',
-  '$OP_EQUAL': '$PREC_EQUALITY',
-  '$OP_GREATER': '$PREC_COMPARISON',
-  '$OP_NOT_LESS': '$PREC_COMPARISON',
-  '$OP_LESS': '$PREC_COMPARISON',
-  '$OP_NOT_GREATER': '$PREC_COMPARISON',
-}).map(([op, prec]) => `;;wasm
-    (if
-      (i32.eq
-        (local.get $operator)
-        (global.get ${op}))
-      (then
-        (local.set $result
-          (global.get ${prec}))
-        (br $out)))
-`).join('')})
+${indent(watSwitch(
+  '$operator_switch',
+  value => `;;wasm
+    (i32.eq
+      (local.get $operator)
+      ${value})`,
+  label => ({
+    '(global.get $TOKEN_PLUS)': `;;wasm
+    (local.set $result
+      (global.get $PREC_TERM))
+    (br ${label})`,
+    '(global.get $TOKEN_MINUS)': `;;wasm
+    (local.set $result
+      (global.get $PREC_TERM))
+    (br ${label})`,
+    '(global.get $TOKEN_STAR)': `;;wasm
+    (local.set $result
+      (global.get $PREC_FACTOR))
+    (br ${label})`,
+    '(global.get $TOKEN_SLASH)': `;;wasm
+    (local.set $result
+      (global.get $PREC_FACTOR))
+    (br ${label})`,
+  }), `;;wasm
+  (local.set $result
+    (global.get $PREC_NONE))`), 2)}
   (local.get $result))
-(func $compile
-  (param $srcptr i32)
-  (local $token i32)
-  (local $start i32)
-  (local $len i32)
-  (local $opstack i32)
-  (local $op i32)
-  (local $prec i32)
-  (local $prev i32)
-  (call $init_scanner
-    (local.get $srcptr))
-  (local.set $opstack
-    (call $alloc
-      (i32.const 256)))
-  (i32.store
-    (local.get $opstack)
-    (i32.add
-      (local.get $opstack)
-      (i32.const 4)))
+(func $parse_precedence
+  (param $precedence i32)
+  (call $advance)
+${indent(watSwitch(
+    '$prefix_switch',
+    value => `;;wasm
+    (i32.eq
+      (global.get $previous)
+      ${value})`,
+    label => ({
+      '(global.get $TOKEN_LEFT_PAREN)': `;;wasm
+    (call $grouping)
+    (br ${label})`,
+      '(global.get $TOKEN_MINUS)': `;;wasm
+    (call $unary)
+    (br ${label})`,
+      '(global.get $TOKEN_NUMBER)': `;;wasm
+    (call $number)
+    (br ${label})`,
+    })), 2)} ;; default should be "expect expression" error
   (block $out
-    (loop $run
-      (local.set $prev
-        (local.get $token))
-      (local.set $token
-        (local.set $start
-          (local.set $len
-            (call $scan_token))))
+    (loop $infix
       (if
-        (i32.eq
-          (local.get $token)
-          (global.get $TOKEN_EOF))
+        (i32.ge_u
+          (local.get $precedence)
+          (call $get_precedence
+            (global.get $current)))
         (then
           (br $out)))
-      (if
-        (i32.eq
-          (local.get $token)
-          (global.get $TOKEN_NUMBER))
-        (then
-          (call $write_chunk
-            (global.get $OP_CONSTANT))
-          (call $write_chunk
-            (call $write_value_array
-              (call $stringToDouble
-                (local.get $start)
-                (local.get $len))))
-          (br $run)))
-      (if
-        (i32.eq
-          (local.get $token)
-          (global.get $TOKEN_STRING))
-        (then
-          (call $write_chunk
-            (global.get $OP_CONSTANT))
-          (call $write_chunk
-            (call $write_value_array
-              (call $copy_string
-                (i32.add
-                  (local.get $start)
-                  (i32.const 4))
-                (i32.sub
-                  (local.get $len)
-                  (i32.const 2)))))
-          (br $run)))
-${Object.entries({
-  '$TOKEN_NIL': '$OP_NIL',
-  '$TOKEN_TRUE': '$OP_TRUE',
-  '$TOKEN_FALSE': '$OP_FALSE',
-}).map(([token, op]) => `;;wasm
-    (if
+        (call $advance)
+${indent(watSwitch(
+      '$infix_switch',
+      value => `;;wasm
       (i32.eq
-        (local.get $token)
-        (global.get ${token}))
-      (then
-        (call $write_chunk
-          (global.get ${op}))
-        (br $run)))
-`).join('')}
-      (if
-        (i32.eq
-          (local.get $token)
-          (global.get $TOKEN_LEFT_PAREN))
-        (then
-          (call $pushop
-            (local.get $opstack)
-            (global.get $OP_GROUP))
-          (br $run)))
-      (if
-        (i32.eq
-          (local.get $token)
-          (global.get $TOKEN_RIGHT_PAREN))
-        (then
-          (loop $group
-            (if
-              (i32.and
-                (call $not_empty
-                  (local.get $opstack))
-                (i32.ne
-                  (call $peekop
-                    (local.get $opstack))
-                  (global.get $OP_GROUP)))
-              (then
-                (call $write_chunk
-                  (call $popop
-                    (local.get $opstack)))
-                (br $group))))
-          (call $popop ;; should assert group op
-            (local.get $opstack))
-          (br $run)))
-      (if
-        (i32.and
-          (i32.eq
-            (local.get $token)
-            (global.get $TOKEN_MINUS))
-          (i32.and
-            (i32.ne
-              (local.get $prev)
-              (global.get $TOKEN_NUMBER))
-            (i32.ne
-              (local.get $prev)
-              (global.get $TOKEN_RIGHT_PAREN))))
-        (then
-          (call $pushop
-            (local.get $opstack)
-            (global.get $OP_NEGATE))
-          (br $run)))
-      (block $switch_op
-${Object.entries({
-  '$TOKEN_MINUS': '$OP_SUBTRACT',
-  '$TOKEN_PLUS': '$OP_ADD',
-  '$TOKEN_SLASH': '$OP_DIVIDE',
-  '$TOKEN_STAR': '$OP_MULTIPLY',
-  '$TOKEN_BANG': '$OP_NOT',
-  '$TOKEN_BANG_EQUAL': '$OP_NOT_EQUAL',
-  '$TOKEN_EQUAL_EQUAL': '$OP_EQUAL',
-  '$TOKEN_GREATER': '$OP_GREATER',
-  '$TOKEN_GREATER_EQUAL': '$OP_NOT_LESS',
-  '$TOKEN_LESS': '$OP_LESS',
-  '$TOKEN_LESS_EQUAL': '$OP_NOT_GREATER',
-}).map(([token, op]) => `;;wasm
-        (if
-          (i32.eq
-            (local.get $token)
-            (global.get ${token}))
-          (then
-            (local.set $op
-              (global.get ${op}))
-            (local.set $prec
-              (call $get_prec
-                (local.get $op)))
-            (br $switch_op)))
-`).join('')}
-      )
-      (loop $while_prec
-        (if
-          (i32.and
-            (call $not_empty
-              (local.get $opstack))
-            (i32.ge_u
-              (call $get_prec
-                (call $peekop
-                  (local.get $opstack)))
-              (local.get $prec)))
-          (then
-            (call $write_chunk
-              (call $popop
-                (local.get $opstack)))
-            (br $while_prec))))
-      (call $pushop
-        (local.get $opstack)
-        (local.get $op))
-      (br $run)))
-  (loop $while_ops
-    (call $write_chunk
-      (call $popop
-        (local.get $opstack)))
-    (br_if $while_ops
-      (call $not_empty
-        (local.get $opstack))))
+        (global.get $previous)
+        ${value})`,
+      label => ({
+        '(global.get $TOKEN_PLUS)': `;;wasm
+        (call $binary)
+        (br ${label})`,
+        '(global.get $TOKEN_MINUS)': `;;wasm
+        (call $binary)
+        (br ${label})`,
+        '(global.get $TOKEN_STAR)': `;;wasm
+        (call $binary)
+        (br ${label})`,
+        '(global.get $TOKEN_SLASH)': `;;wasm
+        (call $binary)
+        (br ${label})`,
+      })), 8)}
+        (br $infix)))
+  )
+(func $expression
+  (call $parse_precedence
+    (global.get $PREC_ASSIGNMENT)))
+(func $number
   (call $write_chunk
-    (global.get $OP_RETURN)))
+    (global.get $OP_CONSTANT))
+  (call $write_chunk
+    (call $write_value_array
+      (call $stringToDouble
+        (global.get $prev_start)
+        (global.get $prev_len)))))
+(func $grouping
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_RIGHT_PAREN)))
+(func $unary
+  (local $operator i32)
+  (local.set $operator
+    (global.get $previous))
+  (call $parse_precedence
+    (global.get $PREC_UNARY))
+  (if
+    (i32.eq
+      (local.get $operator)
+      (global.get $TOKEN_MINUS))
+    (then
+      (call $write_chunk
+        (global.get $OP_NEGATE)))))
+(func $binary
+  (local $operator i32)
+  (local $precedence i32)
+  (local.set $operator
+    (global.get $previous))
+  (local.set $precedence
+    (call $get_precedence
+      (local.get $operator)))
+  (call $parse_precedence
+    (i32.add
+      (local.get $precedence)
+      (i32.const 1)))
+${indent(watSwitch(
+        '$operator_switch',
+        value => `;;wasm
+    (i32.eq
+      (local.get $operator)
+      ${value})`,
+        label => ({
+          '(global.get $TOKEN_PLUS)': `;;wasm
+    (call $write_chunk
+      (global.get $OP_ADD))
+    (br ${label})`,
+          '(global.get $TOKEN_MINUS)': `;;wasm
+    (call $write_chunk
+      (global.get $OP_SUBTRACT))
+    (br ${label})`,
+          '(global.get $TOKEN_STAR)': `;;wasm
+    (call $write_chunk
+      (global.get $OP_MULTIPLY))
+    (br ${label})`,
+          '(global.get $TOKEN_SLASH)': `;;wasm
+    (call $write_chunk
+      (global.get $OP_DIVIDE))
+    (br ${label})`,
+        })), 2)}
+  )
+(func $compile
+  (param $srcptr i32)
+  (call $init_scanner
+    (local.get $srcptr))
+  (call $advance)
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_EOF))
+  (call $write_chunk
+    (global.get $OP_RETURN))
+  )
 `;
