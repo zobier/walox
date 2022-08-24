@@ -227,6 +227,13 @@ export default `;;wasm
             (call $obj_val
               (local.get $ptr)))))))
   (if
+    (call $is_closure
+      (local.get $v))
+    (then
+      (call $print_value
+        (call $get_closure_function
+          (local.get $v)))))
+  (if
     (call $is_number
       (local.get $v))
     (then

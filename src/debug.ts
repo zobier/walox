@@ -81,6 +81,7 @@ ${watSwitch(
     [OP_CODES.OP_DEFINE_GLOBAL, ''],
     [OP_CODES.OP_GET_GLOBAL, ''],
     [OP_CODES.OP_SET_GLOBAL, ''],
+    [OP_CODES.OP_CLOSURE, ''],
     [
       OP_CODES.OP_CONSTANT,
       `;;wasm

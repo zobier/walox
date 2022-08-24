@@ -10,7 +10,7 @@ export enum INTERPRET_RESULT {
 export default `;;wasm
 ${enumToGlobals(INTERPRET_RESULT)}
 (; typedef struct {
-  i32 *function;
+  i32 *closure;
   i32 *ip;
   i32 *slot;
 } CallFrame ;)
@@ -49,7 +49,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (local.get $ip)
       (i32.const 1))))
 (func $add_frame
-  (param $funcptr i32)
+  (param $closure i32)
   (param $ip i32)
   (param $stackptr i32)
   (result i32)
@@ -61,8 +61,8 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (global.get $frame_count)
         (i32.const 12))))
   (i32.store
-    (local.get $frameptr) ;; *function
-    (local.get $funcptr))
+    (local.get $frameptr) ;; *closure
+    (local.get $closure))
   (i32.store
     (i32.add
       (local.get $frameptr)
@@ -127,18 +127,20 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (result i32)
   (if
     (result i32)
-    (call $is_function
+    (call $is_closure
       (local.get $callee)) ;; todo: runtime error if not fun or arg_count != arity
     (then
 ;;      (call $dissasemble
 ;;        (call $get_chunk
-;;          (local.get $callee)))
+;;          (call $get_closure_function
+;;            (local.get $callee))))
       (call $add_frame
         (call $as_obj
           (local.get $callee))
         (call $get_codeptr
           (call $get_chunk
-            (local.get $callee))
+            (call $get_closure_function
+              (local.get $callee)))
           (i32.const 0))
         (i32.sub
           (i32.load
@@ -161,7 +163,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
 (func $interpret
   (param $srcptr i32)
   (result i32)
-  (local $function f64)
+  (local $closure f64)
   (local $frame i32)
   (local $code i32)
   (local $tmp f64)
@@ -171,16 +173,18 @@ ${enumToGlobals(INTERPRET_RESULT)}
   (global.set $call_frames
     (call $alloc
       (i32.const 192)))
-  (local.set $function
-    (call $compile
-      (local.get $srcptr)))
+  (local.set $closure
+    (call $new_closure
+      (call $as_obj
+        (call $compile
+          (local.get $srcptr)))))
   (call $init_stack)
   (call $push
-    (local.get $function))
+    (local.get $closure))
   (local.set $frame
     (call $call_value
       (local.get $frame)
-      (local.get $function)
+      (local.get $closure)
       (i32.const 0)))
   (block $out
     (loop $run
@@ -500,6 +504,17 @@ ${indent(
               (local.get $arg_count))
             (local.get $arg_count)))
         (br $run)`,
+      ],
+      [
+        OP_CODES.OP_CLOSURE,
+        `;;wasm
+        (call $push
+          (call $new_closure
+            (call $as_obj
+              (call $get_value
+                (call $read_byte
+                  (local.get $frame))))))
+        (br $break)`,
       ],
       [
         OP_CODES.OP_RETURN,

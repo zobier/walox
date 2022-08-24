@@ -563,7 +563,7 @@ ${indent(
   (local.set $function
     (call $end_compiler))
   (call $emit_bytes
-    (global.get $OP_CONSTANT)
+    (global.get $OP_CLOSURE)
     (call $write_value_array
       (local.get $function))))
 (func $fun_declaration

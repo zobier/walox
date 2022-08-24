@@ -28,6 +28,7 @@ export enum OP_CODES {
   OP_JUMP_IF_FALSE,
   OP_LOOP,
   OP_CALL,
+  OP_CLOSURE,
   OP_RETURN,
 }
 
