@@ -25,7 +25,6 @@ export enum TOKENS {
 export default `;;wasm
 ${enumToGlobals(TOKENS)}
 (; typedef struct {
-  i8 *start;
   i8 *end;
   i8 *current;
   i32 line;
@@ -40,12 +39,7 @@ ${enumToGlobals(TOKENS)}
     (call $alloc
       (i32.const 4)))
   (i32.store
-    (local.get $this) ;; *start
-    (local.get $srcptr))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 4)) ;; *end
+    (local.get $this) ;; *end
     (i32.add
       (local.get $srcptr)
       (call $get_len
@@ -53,12 +47,12 @@ ${enumToGlobals(TOKENS)}
   (i32.store
     (i32.add
       (local.get $this)
-      (i32.const 8)) ;; *current
+      (i32.const 4)) ;; *current
     (local.get $srcptr))
   (i32.store
     (i32.add
       (local.get $this)
-      (i32.const 12)) ;; line
+      (i32.const 8)) ;; line
     (i32.const 1))
   (global.set $scanner
     (local.get $this)))
@@ -124,14 +118,12 @@ ${enumToGlobals(TOKENS)}
     (global.get $scanner))
   (local.set $end
     (i32.load
-      (i32.add
-        (local.get $this)
-        (i32.const 4)))) ;; *end
+      (local.get $this))) ;; *end
   (local.set $current
     (i32.load
       (i32.add
         (local.get $this)
-        (i32.const 8)))) ;; *current
+        (i32.const 4)))) ;; *current
   (block $out
     (if
       (i32.eq
@@ -206,6 +198,8 @@ ${enumToGlobals(TOKENS)}
             )
           )
         (br $end_whitespace)))
+    (local.set $start
+      (local.get $current))
 ${Object.entries({
   '(': '$TOKEN_LEFT_PAREN',
   ')': '$TOKEN_RIGHT_PAREN',
@@ -384,17 +378,24 @@ ${Object.entries({
         (global.get $TOKEN_IDENTIFIER))
       (br $out)))
   ) ;; out
-  (local.set $start
-      (local.get $current))
-  (i32.store
-    (local.get $this) ;; *start
-    (local.get $start))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 8)) ;; *current
+  (local.set $current
     (i32.add
       (local.get $current)
       (i32.const 1)))
+  (if
+    (i32.ne
+      (local.get $result)
+      (global.get $TOKEN_EOF))
+    (then
+      (call $logString
+        (local.get $start)
+        (i32.sub
+          (local.get $current)
+          (local.get $start)))))
+  (i32.store
+    (i32.add
+      (local.get $this)
+      (i32.const 4)) ;; *current
+      (local.get $current))
   (local.get $result))
 `;
