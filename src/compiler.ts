@@ -131,6 +131,9 @@ ${indent(watSwitch(
       '(global.get $TOKEN_NUMBER)': `;;wasm
     (call $number)
     (br ${label})`,
+      '(global.get $TOKEN_STRING)': `;;wasm
+    (call $string)
+    (br ${label})`,
       '(global.get $TOKEN_BANG)': `;;wasm
     (call $unary)
     (br ${label})`,
@@ -205,6 +208,18 @@ ${indent(watSwitch(
       (call $stringToDouble
         (global.get $prev_start)
         (global.get $prev_len)))))
+(func $string
+  (call $write_chunk
+    (global.get $OP_CONSTANT))
+  (call $write_chunk
+    (call $write_value_array
+      (call $copy_string
+        (i32.add
+          (global.get $prev_start)
+          (i32.const 4))
+        (i32.sub
+          (global.get $prev_len)
+          (i32.const 2))))))
 (func $grouping
   (call $expression)
   (call $consume
