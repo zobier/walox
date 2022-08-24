@@ -90,18 +90,19 @@ ${enumToGlobals(TOKENS)}
   (param $expected i32)
   (result i32)
   (if
+    (result i32)
     (i32.eq
       (local.get $current)
       (local.get $end))
     (then
-      (return
-        (i32.const 0))))
-  (i32.eq
-    (i32.load
-      (i32.add
-        (local.get $current)
-        (i32.const 4)))
-    (local.get $expected)))
+      (i32.const 0))
+    (else
+      (i32.eq
+        (i32.load
+          (i32.add
+            (local.get $current)
+            (i32.const 4)))
+        (local.get $expected)))))
 (func $is_digit
   (param $char i32)
   (result i32)

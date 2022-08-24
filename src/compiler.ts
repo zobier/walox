@@ -81,14 +81,15 @@ ${enumToGlobals(PRECEDENCE)}
   (param $token i32)
   (result i32)
   (if
+    (result i32)
     (i32.eqz
       (call $check
         (local.get $token)))
     (then
-      (return
-        (i32.const 0))))
-  (call $advance)
-  (i32.const 1))
+      (i32.const 0))
+    (else
+      (call $advance)
+      (i32.const 1))))
 (func $get_precedence
   (param $operator i32)
   (result i32)
@@ -306,14 +307,15 @@ ${indent(
   (call $consume
     (global.get $TOKEN_IDENTIFIER))
   (if
+    (result i32)
     (i32.gt_u
       (global.get $scope_depth)
       (i32.const 0))
     (then
       (call $declare_variable)
-      (return
-        (i32.const 0))))
-  (call $identifier_constant))
+      (i32.const 0))
+    (else
+      (call $identifier_constant))))
 (func $define_variable
   (param $global i32)
   (if
