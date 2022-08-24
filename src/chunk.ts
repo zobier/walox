@@ -45,7 +45,7 @@ ${enumToGlobals(OP_CODES)}
     (call $alloc
       (i32.const 3)))
   (local.set $capacity
-    (i32.const 32))
+    (i32.const 2))
   (i32.store
     (i32.add
       (local.get $chunkptr)
@@ -71,11 +71,40 @@ ${enumToGlobals(OP_CODES)}
 (func $write_chunk
   (param $chunkptr i32)
   (param $code i32)
-  ;; todo: realloc if count > capacity
   (local $count i32)
+  (local $capacity i32)
   (local.set $count
     (i32.load
       (local.get $chunkptr)))
+  (local.set $capacity
+    (i32.load
+      (i32.add
+        (local.get $chunkptr)
+        (i32.const 4)))) ;; capacity
+  (if
+    (i32.gt_u
+      (local.get $count)
+      (local.get $capacity))
+    (then
+      (local.set $capacity
+        (i32.mul
+          (local.get $capacity)
+          (i32.const 2)))
+      (i32.store
+        (i32.add
+          (local.get $chunkptr)
+          (i32.const 8)) ;; *code
+        (call $realloc
+          (i32.load
+            (i32.add
+              (local.get $chunkptr)
+              (i32.const 8))) ;; *code
+          (local.get $capacity)))
+        (i32.store
+          (i32.add
+            (local.get $chunkptr)
+            (i32.const 4)) ;; capacity
+          (local.get $capacity))))
   (i32.store8
     (call $get_codeptr
       (local.get $chunkptr)

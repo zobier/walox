@@ -95,33 +95,6 @@ ${enumToGlobals(OBJ_TYPE)}
       (call $as_obj
         (local.get $v))
       (i32.const 8)))) ;; hash
-(func $mem_copy
-  (param $from i32)
-  (param $to i32)
-  (param $len i32)
-  (local $i i32)
-  (local.set $i
-    (i32.const 0))
-  (loop $copy
-    (i32.store
-      (i32.add
-        (local.get $to)
-        (i32.mul
-          (local.get $i)
-          (i32.const 4)))
-      (i32.load
-        (i32.add
-          (local.get $from)
-          (i32.mul
-            (local.get $i)
-            (i32.const 4)))))
-    (br_if $copy
-      (i32.lt_u
-        (local.tee $i
-          (i32.add
-            (local.get $i)
-            (i32.const 1)))
-        (local.get $len)))))
 (func $copy_string
   (param $start i32)
   (param $len i32)
