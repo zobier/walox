@@ -1,3 +1,12 @@
+import { struct } from './common';
+import { OBJ_TYPE } from './object';
+
+const ValueArray = struct([
+  ['count', 'i32'],
+  ['capacity', 'i32'],
+  ['*values', 'i32'],
+]);
+
 export default `;;wasm
 (global $SIGN_BIT i64
   (i64.const 0x8000000000000000))
@@ -9,11 +18,6 @@ export default `;;wasm
   (i64.const 0x7ffc000000000002))
 (global $TRUE i64
   (i64.const 0x7ffc000000000003))
-(; typedef struct {
-  i32 count;
-  i32 capacity;
-  f64 *values;
-} ValueArray ;)
 (global $value_array
   (mut i32)
   (i32.const 0))
@@ -21,21 +25,24 @@ export default `;;wasm
   (param $capacity i32)
   (local $this i32)
   (local.set $this
-    (call $alloc
-      (i32.const 3)))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 4)) ;; capacity
-    (local.get $capacity))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 8)) ;; *values
+    ${ValueArray.alloc()})
+  ${ValueArray.set(
+    'capacity',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
+    (local.get $capacity)`,
+  )}
+  ${ValueArray.set(
+    '*values',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
     (call $alloc
       (i32.mul
         (local.get $capacity)
-        (i32.const 4))))
+        (i32.const 4)))`,
+  )}
   (global.set $value_array
     (local.get $this)))
 (func $get_valueptr
@@ -45,10 +52,11 @@ export default `;;wasm
   (local.set $this
     (global.get $value_array))
   (i32.add
-    (i32.load
-      (i32.add
-        (local.get $this)
-        (i32.const 8))) ;; *values
+    ${ValueArray.get(
+      '*values',
+      `;;wasm
+      (local.get $this)`,
+    )}
     (i32.mul
       (local.get $i)
       (i32.const 8)))) ;; 64 / 8
@@ -70,11 +78,15 @@ export default `;;wasm
   (f64.store
     (local.get $valueptr)
     (local.get $value))
-  (i32.store
-    (local.get $this) ;; count
+  ${ValueArray.set(
+    'count',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
     (i32.add
       (local.get $count)
-      (i32.const 1)))
+      (i32.const 1))`,
+  )}
   (local.get $count))
 (func $get_value
   (param $i i32)
@@ -171,8 +183,9 @@ export default `;;wasm
           (local.get $a)
           (local.get $b)))))
   (if
-    (call $is_string
-      (local.get $a))
+    (call $is_obj_type
+      (local.get $a)
+      (i32.const ${OBJ_TYPE.OBJ_STRING}))
     (then
       (local.set $result
         (call $str_cmp
@@ -204,8 +217,9 @@ export default `;;wasm
     (then
       (call $logNil)))
   (if
-    (call $is_string
-      (local.get $v))
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_STRING}))
     (then
       (local.set $ptr
         (call $get_string
@@ -215,8 +229,9 @@ export default `;;wasm
         (call $get_len
           (local.get $ptr)))))
   (if
-    (call $is_function
-      (local.get $v))
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_FUNCTION}))
     (then
       (if
         (local.tee $ptr
@@ -227,8 +242,9 @@ export default `;;wasm
             (call $obj_val
               (local.get $ptr)))))))
   (if
-    (call $is_closure
-      (local.get $v))
+    (call $is_obj_type
+      (local.get $v)
+      (i32.const ${OBJ_TYPE.OBJ_CLOSURE}))
     (then
       (call $print_value
         (call $get_closure_function

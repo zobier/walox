@@ -1,5 +1,5 @@
 import { OP_CODES } from './chunk';
-import { indent, watSwitch } from './common';
+import { indent, struct, watSwitch } from './common';
 import { TOKENS } from './scanner';
 
 export enum PRECEDENCE {
@@ -16,24 +16,25 @@ export enum PRECEDENCE {
   PREC_PRIMARY,
 }
 
+const Local = struct([
+  ['*name', 'i32'],
+  ['depth', 'i32'],
+  ['is_captured', 'i32'],
+]);
+const Upvalue = struct([
+  ['is_local', 'i32'],
+  ['index', 'i32'],
+]);
+const Compiler = struct([
+  ['*enclosing', 'i32'],
+  ['*function', 'i32'],
+  ['*locals', 'i32'],
+  ['local_count', 'i32'],
+  ['*upvalues', 'i32'],
+  ['scope_depth', 'i32'],
+]);
+
 export default `;;wasm
-(; typedef struct {
-  i32 *name;
-  i32 depth;
-  i32 is_captured;
-} Local
-typedef struct {
-  i32 is_local;
-  i32 index;
-} Upvalue
-typedef struct {
-  i32 *enclosing;
-  i32 *function;
-  i32 *locals;
-  i32 local_count;
-  i32 *upvalues;
-  i32 scope_depth;
-} Compiler ;)
 (global $previous
   (mut i32)
   (i32.const 0))
@@ -58,29 +59,38 @@ typedef struct {
 (func $init_compiler
   (local $compiler i32)
   (local.set $compiler
-    (call $alloc
-      (i32.const 6)))
-  (i32.store
-    (local.get $compiler) ;; *enclosing
-    (global.get $compiler))
-  (i32.store
-    (i32.add
-      (local.get $compiler)
-      (i32.const 4)) ;; *function
+    ${Compiler.alloc()})
+  ${Compiler.set(
+    '*enclosing',
+    `;;wasm
+    (local.get $compiler)`,
+    `;;wasm
+    (global.get $compiler)`,
+  )}
+  ${Compiler.set(
+    '*function',
+    `;;wasm
+    (local.get $compiler)`,
+    `;;wasm
     (call $as_obj
-      (call $new_function)))
-  (i32.store
-    (i32.add
-      (local.get $compiler)
-      (i32.const 8)) ;; *locals
+      (call $new_function))`,
+  )}
+  ${Compiler.set(
+    '*locals',
+    `;;wasm
+    (local.get $compiler)`,
+    `;;wasm
     (call $alloc
-      (i32.const 768)))
-  (i32.store
-    (i32.add
-      (local.get $compiler)
-      (i32.const 16)) ;; *upvalues
+      (i32.const 768))`,
+  )}
+  ${Compiler.set(
+    '*upvalues',
+    `;;wasm
+    (local.get $compiler)`,
+    `;;wasm
     (call $alloc
-      (i32.const 512)))
+      (i32.const 512))`,
+  )}
   (global.set $compiler
     (local.get $compiler))
   (call $add_local
@@ -91,85 +101,100 @@ typedef struct {
 (func $get_enclosing
   (param $compiler i32)
   (result i32)
-  (i32.load
-    (local.get $compiler))) ;; *enclosing
+  ${Compiler.get(
+    '*enclosing',
+    `;;wasm
+    (local.get $compiler)`,
+  )})
 (func $get_function
   (param $compiler i32)
   (result f64)
   (call $obj_val
-    (i32.load
-      (i32.add
-        (local.get $compiler)
-        (i32.const 4))))) ;; *function
+    ${Compiler.get(
+      '*function',
+      `;;wasm
+      (local.get $compiler)`,
+    )}))
 (func $get_locals
   (param $compiler i32)
   (result i32)
-  (i32.load
-    (i32.add
-      (local.get $compiler)
-      (i32.const 8)))) ;; *locals
+  ${Compiler.get(
+    '*locals',
+    `;;wasm
+    (local.get $compiler)`,
+  )})
 (func $get_local_count
   (param $compiler i32)
   (result i32)
-  (i32.load
-    (i32.add
-      (local.get $compiler)
-      (i32.const 12)))) ;; local_count
+  ${Compiler.get(
+    'local_count',
+    `;;wasm
+    (local.get $compiler)`,
+  )})
 (func $set_local_count
   (param $compiler i32)
   (param $count i32)
-  (i32.store
-    (i32.add
-      (local.get $compiler)
-      (i32.const 12)) ;; local_count
-    (local.get $count)))
+  ${Compiler.set(
+    'local_count',
+    `;;wasm
+    (local.get $compiler)`,
+    `;;wasm
+    (local.get $count)`,
+  )})
 (func $get_upvalues
   (param $compiler i32)
   (result i32)
-  (i32.load
-    (i32.add
-      (local.get $compiler)
-      (i32.const 16)))) ;; *upvalues
+  ${Compiler.get(
+    '*upvalues',
+    `;;wasm
+    (local.get $compiler)`,
+  )})
 (func $get_scope_depth
   (result i32)
-  (i32.load
-    (i32.add
-      (global.get $compiler)
-      (i32.const 20)))) ;; scope_depth
+  ${Compiler.get(
+    'scope_depth',
+    `;;wasm
+    (global.get $compiler)`, // :yuno: param?
+  )})
 (func $set_scope_depth
   (param $depth i32)
-  (i32.store
-    (i32.add
-      (global.get $compiler)
-      (i32.const 20)) ;; scope_depth
-    (local.get $depth)))
+  ${Compiler.set(
+    'scope_depth',
+    `;;wasm
+    (global.get $compiler)`,
+    `;;wasm
+    (local.get $depth)`,
+  )})
 (func $get_is_captured
   (param $compiler i32)
   (param $i i32)
   (result i32)
-  (i32.load
+  ${Local.get(
+    'is_captured',
+    `;;wasm
     (i32.add
-      (i32.add
-        (call $get_locals
-          (local.get $compiler))
-        (i32.mul
-          (local.get $i)
-          (i32.const 12))) ;; sizeof Local
-      (i32.const 4)))) ;; is_captured
+      (call $get_locals
+        (local.get $compiler))
+      (i32.mul
+        (local.get $i)
+        (i32.const ${Local.size()})))`,
+  )})
 (func $set_is_captured
   (param $compiler i32)
   (param $i i32)
   (param $is_captured i32)
-  (i32.store
+  ${Local.set(
+    'is_captured',
+    `;;wasm
     (i32.add
-      (i32.add
-        (call $get_locals
-          (local.get $compiler))
-        (i32.mul
-          (local.get $i)
-          (i32.const 12))) ;; sizeof Local
-      (i32.const 4)) ;; is_captured
-    (local.get $is_captured)))
+      (call $get_locals
+        (local.get $compiler))
+      (i32.mul
+        (local.get $i)
+        (i32.const ${Local.size()})))`,
+    `;;wasm
+    (local.get $is_captured)`,
+  )})
 (func $advance
   (global.set $previous
     (global.get $current))
@@ -443,7 +468,7 @@ ${indent(
                 (local.get $compiler))
               (i32.mul
                 (local.get $i)
-                (i32.const 12))))) ;; sizeof Local
+                (i32.const ${Local.size()})))))
         (then
           (if
             (call $str_cmp
@@ -494,18 +519,22 @@ ${indent(
           (local.get $upvalues)
           (i32.mul
             (local.get $i)
-            (i32.const 8)))) ;; sizeof Upvalue
+            (i32.const ${Upvalue.size()}))))
       (if
         (i32.and
           (i32.eq
-            (i32.load
-              (local.get $upvalueptr)) ;; is_local
+            ${Upvalue.get(
+              'is_local',
+              `;;wasm
+              (local.get $upvalueptr)`,
+            )}
             (local.get $is_local))
           (i32.eq
-            (i32.load
-              (i32.add
-                (local.get $upvalueptr)
-                (i32.const 4))) ;; index
+            ${Upvalue.get(
+              'index',
+              `;;wasm
+              (local.get $upvalueptr)`,
+            )}
             (local.get $index)))
         (then
           (return
@@ -520,15 +549,21 @@ ${indent(
       (local.get $upvalues)
       (i32.mul
         (local.get $upvalue_count)
-        (i32.const 8)))) ;; sizeof Upvalue
-  (i32.store
-    (local.get $upvalueptr) ;; is_local
-    (local.get $is_local))
-  (i32.store
-    (i32.add
-      (local.get $upvalueptr)
-      (i32.const 4)) ;; index
-    (local.get $index))
+        (i32.const ${Upvalue.size()}))))
+  ${Upvalue.set(
+    'is_local',
+    `;;wasm
+    (local.get $upvalueptr)`,
+    `;;wasm
+    (local.get $is_local)`,
+  )}
+  ${Upvalue.set(
+    'index',
+    `;;wasm
+    (local.get $upvalueptr)`,
+    `;;wasm
+    (local.get $index)`,
+  )}
   (call $set_upvalue_count
     (local.get $function)
     (i32.add
@@ -594,15 +629,21 @@ ${indent(
       (i32.mul
         (call $get_local_count ;; should check this is < 256
           (global.get $compiler))
-        (i32.const 12)))) ;; sizeof Local
-  (i32.store
-    (local.get $localptr)
-    (local.get $nameptr))
-  (i32.store
-    (i32.add
-      (local.get $localptr)
-      (i32.const 4)) ;; depth
-    (call $get_scope_depth))
+        (i32.const ${Local.size()}))))
+  ${Local.set(
+    '*name',
+    `;;wasm
+    (local.get $localptr)`,
+    `;;wasm
+    (local.get $nameptr)`,
+  )}
+  ${Local.set(
+    'depth',
+    `;;wasm
+    (local.get $localptr)`,
+    `;;wasm
+    (call $get_scope_depth)`,
+  )}
   (call $set_local_count
     (global.get $compiler)
     (i32.add
@@ -772,14 +813,18 @@ ${indent(
           (local.get $upvalues)
           (i32.mul
             (local.get $i)
-            (i32.const 8)))) ;; sizeof Upvalue
+            (i32.const ${Upvalue.size()}))))
       (call $emit_bytes
-        (i32.load
-          (local.get $upvalueptr)) ;; is_local
-        (i32.load
-          (i32.add
-            (local.get $upvalueptr)
-            (i32.const 4)))) ;; index
+        ${Upvalue.get(
+          'is_local',
+          `;;wasm
+          (local.get $upvalueptr)`,
+        )}
+        ${Upvalue.get(
+          'index',
+          `;;wasm
+          (local.get $upvalueptr)`,
+        )})
       (local.set $i
         (i32.add
           (local.get $i)
@@ -1150,7 +1195,9 @@ ${indent(
             (i32.const ${OP_CODES.OP_SET_GLOBAL}))))))
   (if
     (call $match_token
-      (i32.const ${TOKENS.TOKEN_EQUAL})) ;; todo: check precedence <= PREC_ASSIGNMENT
+      (i32.const ${
+        TOKENS.TOKEN_EQUAL
+      })) ;; todo: check precedence <= PREC_ASSIGNMENT
     (then
       (call $expression)
       (call $emit_byte
@@ -1343,15 +1390,16 @@ ${indent(
           (i32.eqz
             (local.get $local_count))
           (i32.eq
-            (i32.load
+            ${Local.get(
+              'depth',
+              `;;wasm
               (i32.add
-                (i32.add
-                  (call $get_locals
-                    (global.get $compiler))
-                  (i32.mul
-                    (local.get $local_count)
-                    (i32.const 12))) ;; sizeof Local
-                (i32.const 4))) ;; depth
+                (call $get_locals
+                  (global.get $compiler))
+                (i32.mul
+                  (local.get $local_count)
+                  (i32.const ${Local.size()})))`,
+            )}
             (call $get_scope_depth))))
       (local.set $local_count
         (i32.sub

@@ -1,3 +1,5 @@
+import { struct } from './common';
+
 export enum OBJ_TYPE {
   OBJ_CLOSURE = 1,
   OBJ_FUNCTION,
@@ -6,34 +8,35 @@ export enum OBJ_TYPE {
   OBJ_UPVALUE,
 }
 
+const ObjString = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['*chars', 'i32'],
+  ['hash', 'i32'],
+]);
+const ObjUpvalue = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['*location', 'i32'],
+  ['closed', 'f64'],
+  ['*next', 'i32'],
+]);
+const ObjFunction = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['arity', 'i32'],
+  ['upvalue_count', 'i32'],
+  ['*chunk', 'i32'],
+  ['*name', 'i32'],
+]);
+const ObjNative = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['NATIVE', 'i32'],
+]);
+const ObjClosure = struct([
+  ['OBJ_TYPE', 'i32'],
+  ['*function', 'i32'],
+  ['**upvalue', 'i32'],
+]);
+
 export default `;;wasm
-(; typedef struct {
-  i32 OBJ_TYPE;
-  i32 *chars;
-  i32 hash;
-} ObjString
-typeder struct {
-  i32 OBJ_TYPE;
-  i32 *location;
-  f64 closed;
-  i32 *next;
-} ObjUpvalue
-typedef struct {
-  i32 OBJ_TYPE;
-  i32 arity;
-  i32 upvalue_count;
-  i32 *chunk;
-  i32 *name;
-} ObjFunction
-typedef struct {
-  i32 OBJ_TYPE;
-  i32 NATIVE;
-} ObjNative
-typedef struct {
-  i32 OBJ_TYPE;
-  i32 *function;
-  i32 **upvalue;
-} ObjClosure ;)
 (func $hash
   (param $charptr i32)
   (result i32)
@@ -74,22 +77,29 @@ typedef struct {
   (result f64)
   (local $ptr i32)
   (local.set $ptr
-    (call $alloc
-      (i32.const 3)))
-  (i32.store
-    (local.get $ptr)
-    (i32.const ${OBJ_TYPE.OBJ_STRING}))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 4)) ;; *chars
-    (local.get $charptr))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 8)) ;; hash
+    ${ObjString.alloc()})
+  ${ObjString.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_STRING})`,
+  )}
+  ${ObjString.set(
+    '*chars',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $charptr)`,
+  )}
+  ${ObjString.set(
+    'hash',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
     (call $hash
-      (local.get $charptr)))
+      (local.get $charptr))`,
+  )}
   (call $obj_val
     (local.get $ptr)))
 (func $new_upvalue
@@ -97,47 +107,63 @@ typedef struct {
   (result f64)
   (local $ptr i32)
   (local.set $ptr
-    (call $alloc
-      (i32.const 5)))
-  (i32.store
-    (local.get $ptr)
-    (i32.const ${OBJ_TYPE.OBJ_UPVALUE}))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 4)) ;; *location
-    (local.get $valueptr))
+    ${ObjUpvalue.alloc()})
+  ${ObjUpvalue.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_UPVALUE})`,
+  )}
+  ${ObjUpvalue.set(
+    '*location',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $valueptr)`,
+  )}
   (call $obj_val
     (local.get $ptr)))
 (func $new_function
   (result f64)
   (local $ptr i32)
   (local.set $ptr
-    (call $alloc
-      (i32.const 4)))
-  (i32.store
-    (local.get $ptr)
-    (i32.const ${OBJ_TYPE.OBJ_FUNCTION}))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 4)) ;; arity
-    (i32.const 0))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 8)) ;; upvalue_count
-    (i32.const 0))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 12)) ;; *chunk
-    (call $init_chunk))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 16)) ;; *name
-    (i32.const 0))
+    ${ObjFunction.alloc()})
+  ${ObjFunction.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_FUNCTION})`,
+  )}
+  ${ObjFunction.set(
+    'arity',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const 0)`,
+  )}
+  ${ObjFunction.set(
+    'upvalue_count',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const 0)`,
+  )}
+  ${ObjFunction.set(
+    '*chunk',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (call $init_chunk)`,
+  )}
+  ${ObjFunction.set(
+    '*name',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const 0)`,
+  )}
   (call $obj_val
     (local.get $ptr)))
 (func $new_native
@@ -145,16 +171,21 @@ typedef struct {
   (result f64)
   (local $ptr i32)
   (local.set $ptr
-    (call $alloc
-      (i32.const 2)))
-  (i32.store
-    (local.get $ptr)
-    (i32.const ${OBJ_TYPE.OBJ_NATIVE}))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 4)) ;; NATIVE
-    (local.get $NATIVE))
+    ${ObjNative.alloc()})
+  ${ObjNative.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_NATIVE})`,
+  )}
+  ${ObjNative.set(
+    'NATIVE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $NATIVE)`,
+  )}
   (call $obj_val
     (local.get $ptr)))
 (func $new_closure
@@ -163,30 +194,38 @@ typedef struct {
   (local $ptr i32)
   (local $upvalue_count i32)
   (local.set $ptr
-    (call $alloc
-      (i32.const 2)))
-  (i32.store
-    (local.get $ptr)
-    (i32.const ${OBJ_TYPE.OBJ_CLOSURE}))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 4)) ;; *function
-    (local.get $funcptr))
+    ${ObjClosure.alloc()})
+  ${ObjClosure.set(
+    'OBJ_TYPE',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (i32.const ${OBJ_TYPE.OBJ_CLOSURE})`,
+  )}
+  ${ObjClosure.set(
+    '*function',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
+    (local.get $funcptr)`,
+  )}
   (local.set $upvalue_count
     (call $get_upvalue_count
       (call $obj_val
         (local.get $funcptr))))
-  (i32.store
-    (i32.add
-      (local.get $ptr)
-      (i32.const 8)) ;; **upvalue
+  ${ObjClosure.set(
+    '**upvalue',
+    `;;wasm
+    (local.get $ptr)`,
+    `;;wasm
     (call $alloc
-      (local.get $upvalue_count)))
+      (local.get $upvalue_count))`,
+  )}
   (call $obj_val
     (local.get $ptr)))
-(func $is_string
+(func $is_obj_type
   (param $v f64)
+  (param $type i32)
   (result i32)
   (if
     (result i32)
@@ -197,146 +236,115 @@ typedef struct {
         (i32.load
           (call $as_obj
             (local.get $v)))
-        (i32.const ${OBJ_TYPE.OBJ_STRING})))
-    (else
-      (i32.const 0))))
-(func $is_function
-  (param $v f64)
-  (result i32)
-  (if
-    (result i32)
-    (call $is_obj
-      (local.get $v))
-    (then
-      (i32.eq
-        (i32.load
-          (call $as_obj
-            (local.get $v)))
-        (i32.const ${OBJ_TYPE.OBJ_FUNCTION})))
-    (else
-      (i32.const 0))))
-(func $is_native
-  (param $v f64)
-  (result i32)
-  (if
-    (result i32)
-    (call $is_obj
-      (local.get $v))
-    (then
-      (i32.eq
-        (i32.load
-          (call $as_obj
-            (local.get $v)))
-        (i32.const ${OBJ_TYPE.OBJ_NATIVE})))
-    (else
-      (i32.const 0))))
-(func $is_closure
-  (param $v f64)
-  (result i32)
-  (if
-    (result i32)
-    (call $is_obj
-      (local.get $v))
-    (then
-      (i32.eq
-        (i32.load
-          (call $as_obj
-            (local.get $v)))
-        (i32.const ${OBJ_TYPE.OBJ_CLOSURE})))
+        (local.get $type)))
     (else
       (i32.const 0))))
 (func $get_string
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)))) ;; *chars
+  ${ObjString.get(
+    '*chars',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $get_hash
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 8)))) ;; hash
+  ${ObjString.get(
+    'hash',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $get_arity
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)))) ;; arity
+  ${ObjFunction.get(
+    'arity',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $set_arity
   (param $v f64)
   (param $arity i32)
-  (i32.store
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)) ;; arity
-    (local.get $arity)))
+  ${ObjFunction.set(
+    'arity',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+    `;;wasm
+    (local.get $arity)`,
+  )})
 (func $get_upvalue_count
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 8)))) ;; upvalue_count
+  ${ObjFunction.get(
+    'upvalue_count',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $set_upvalue_count
   (param $v f64)
   (param $upvalue_count i32)
-  (i32.store
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 8)) ;; upvalue_count
-    (local.get $upvalue_count)))
+  ${ObjFunction.set(
+    'upvalue_count',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+    `;;wasm
+    (local.get $upvalue_count)`,
+  )})
 (func $get_chunk
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 12)))) ;; *chunk
+  ${ObjFunction.get(
+    '*chunk',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $get_name
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 16)))) ;; name
+  ${ObjFunction.get(
+    '*name',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $set_name
   (param $v f64)
   (param $name i32)
-  (i32.store
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 16)) ;; name
-    (local.get $name)))
+  ${ObjFunction.set(
+    '*name',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+    `;;wasm
+    (local.get $name)`,
+  )})
 (func $get_native
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)))) ;; NATIVE
+  ${ObjNative.get(
+    'NATIVE',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $get_closure_function
   (param $v f64)
   (result f64)
   (call $obj_val
-    (i32.load
-      (i32.add
-        (call $as_obj
-          (local.get $v))
-        (i32.const 4))))) ;; *function
+    ${ObjClosure.get(
+      '*function',
+      `;;wasm
+      (call $as_obj
+        (local.get $v))`,
+    )}))
 (func $get_upvalue
   (param $v f64)
   (param $i i32)
@@ -344,11 +352,12 @@ typedef struct {
   (call $obj_val
     (i32.load
       (i32.add
-        (i32.load
-          (i32.add
-            (call $as_obj
-              (local.get $v))
-            (i32.const 8))) ;; **upvalue
+        ${ObjClosure.get(
+          '**upvalue',
+          `;;wasm
+          (call $as_obj
+            (local.get $v))`,
+        )}
         (i32.mul
           (local.get $i)
           (i32.const 4))))))
@@ -358,11 +367,12 @@ typedef struct {
   (param $upvalue f64)
   (i32.store
     (i32.add
-      (i32.load
-        (i32.add
-          (call $as_obj
-            (local.get $v))
-          (i32.const 8))) ;; **upvalue
+      ${ObjClosure.get(
+        '**upvalue',
+        `;;wasm
+        (call $as_obj
+          (local.get $v))`,
+      )}
       (i32.mul
         (local.get $i)
         (i32.const 4)))
@@ -371,50 +381,58 @@ typedef struct {
 (func $get_upvalue_location
   (param $v f64)
   (result i32)
-  (i32.load
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)))) ;; *location
+  ${ObjUpvalue.get(
+    '*location',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+  )})
 (func $set_upvalue_location
   (param $v f64)
   (param $valueptr i32)
-  (i32.store
-    (i32.add
-      (call $as_obj
-        (local.get $v))
-      (i32.const 4)) ;; *location
-    (local.get $valueptr)))
+  ${ObjUpvalue.set(
+    '*location',
+    `;;wasm
+    (call $as_obj
+      (local.get $v))`,
+    `;;wasm
+    (local.get $valueptr)`,
+  )})
 (func $get_upvalue_next
   (param $v f64)
   (result f64)
   (call $obj_val
-    (i32.load
-      (i32.add
-        (i32.load
-          (call $as_obj
-            (local.get $v)))
-        (i32.const 16))))) ;; *next
+    ${ObjUpvalue.get(
+      '*next',
+      `;;wasm
+      (i32.load
+        (call $as_obj
+          (local.get $v)))`,
+    )}))
 (func $set_upvalue_next
   (param $v f64)
   (param $value f64)
-  (i32.store
-    (i32.add
-      (i32.load
-        (call $as_obj
-          (local.get $v)))
-      (i32.const 16)) ;; *next
+  ${ObjUpvalue.set(
+    '*next',
+    `;;wasm
+    (i32.load
+      (call $as_obj
+        (local.get $v)))`,
+    `;;wasm
     (call $as_obj
-      (local.get $value))))
+      (local.get $value))`,
+  )})
 (func $set_upvalue_closed
   (param $v f64)
   (local $closed i32)
   (local.set $closed
-    (i32.add
+    ${ObjUpvalue.addr(
+      'closed',
+      `;;wasm
       (i32.load
         (call $as_obj
-          (local.get $v)))
-      (i32.const 8))) ;; *closed
+          (local.get $v)))`,
+    )})
   (f64.store
     (local.get $closed)
     (f64.load

@@ -2,6 +2,7 @@ import wabt from 'wabt';
 
 import memory from '../memory';
 import value from '../value';
+import chunk from '../chunk';
 import object from '../object';
 import table from '../table';
 import util, { getUtil } from '../util';
@@ -19,6 +20,7 @@ wabt()
   ${util} ;; imports must occur before all non-import definitions
   ${memory}
   ${value}
+  ${chunk}
   ${object}
   ${table}
   (func 

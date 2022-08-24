@@ -1,5 +1,6 @@
-import { indent, watSwitch } from './common';
+import { indent, struct, watSwitch } from './common';
 import { OP_CODES } from './chunk';
+import { OBJ_TYPE } from './object';
 
 export enum INTERPRET_RESULT {
   INTERPRET_OK = 1,
@@ -7,12 +8,13 @@ export enum INTERPRET_RESULT {
   INTERPRET_RUNTIME_ERROR,
 }
 
+const CallFrame = struct([
+  ['*closure', 'i32'],
+  ['*ip', 'i32'],
+  ['*slot', 'i32'],
+]);
+
 export default `;;wasm
-(; typedef struct {
-  i32 *closure;
-  i32 *ip;
-  i32 *slot;
-} CallFrame ;)
 (global $call_frames
   (mut i32)
   (i32.const 0))
@@ -61,20 +63,28 @@ export default `;;wasm
       (global.get $call_frames)
       (i32.mul
         (global.get $frame_count)
-        (i32.const 12))))
-  (i32.store
-    (local.get $frameptr) ;; *closure
-    (local.get $closure))
-  (i32.store
-    (i32.add
-      (local.get $frameptr)
-      (i32.const 4)) ;; *ip
-    (local.get $ip))
-  (i32.store
-    (i32.add
-      (local.get $frameptr)
-      (i32.const 8)) ;; *slot
-    (local.get $stackptr))
+        (i32.const ${CallFrame.size()}))))
+  ${CallFrame.set(
+    '*closure',
+    `;;wasm
+    (local.get $frameptr)`,
+    `;;wasm
+    (local.get $closure)`,
+  )}
+  ${CallFrame.set(
+    '*ip',
+    `;;wasm
+    (local.get $frameptr)`,
+    `;;wasm
+    (local.get $ip)`,
+  )}
+  ${CallFrame.set(
+    '*slot',
+    `;;wasm
+    (local.get $frameptr)`,
+    `;;wasm
+    (local.get $stackptr)`,
+  )}
   (global.set $frame_count
     (i32.add
       (global.get $frame_count)
@@ -83,27 +93,31 @@ export default `;;wasm
 (func $get_ip
   (param $frameptr i32)
   (result i32)
-  (i32.load
-    (i32.add
-      (local.get $frameptr)
-      (i32.const 4)))) ;; *ip
+  ${CallFrame.get(
+    '*ip',
+    `;;wasm
+    (local.get $frameptr)`,
+  )})
 (func $set_ip
   (param $frameptr i32)
   (param $ip i32)
-  (i32.store
-    (i32.add
-      (local.get $frameptr)
-      (i32.const 4)) ;; *ip
-    (local.get $ip)))
+  ${CallFrame.set(
+    '*ip',
+    `;;wasm
+    (local.get $frameptr)`,
+    `;;wasm
+    (local.get $ip)`
+  )})
 (func $get_slotptr
   (param $frameptr i32)
   (param $i i32)
   (result i32)
   (i32.add
-    (i32.load
-      (i32.add
-        (local.get $frameptr)
-        (i32.const 8))) ;; *slot
+    ${CallFrame.get(
+      '*slot',
+      `;;wasm
+      (local.get $frameptr)`,
+    )}
     (i32.mul
       (local.get $i)
       (i32.const 8))))
@@ -113,10 +127,11 @@ export default `;;wasm
   (param $v f64)
   (f64.store
     (i32.add
-      (i32.load
-        (i32.add
-          (local.get $frameptr)
-          (i32.const 8))) ;; *slot
+      ${CallFrame.get(
+        '*slot',
+        `;;wasm
+        (local.get $frameptr)`,
+      )}
       (i32.mul
         (local.get $i)
         (i32.const 8)))
@@ -128,8 +143,9 @@ export default `;;wasm
   (result i32)
   (if
     (result i32)
-    (call $is_closure
-      (local.get $callee)) ;; todo: runtime error if not fun or arg_count != arity
+    (call $is_obj_type
+      (local.get $callee) ;; todo: runtime error if not fun or arg_count != arity
+      (i32.const ${OBJ_TYPE.OBJ_CLOSURE}))
     (then
 ;;      (call $dissasemble
 ;;        (call $get_chunk
@@ -153,8 +169,9 @@ export default `;;wasm
             (i32.const 8)))))
     (else
       (if
-        (call $is_native
-          (local.get $callee))
+        (call $is_obj_type
+          (local.get $callee)
+          (i32.const ${OBJ_TYPE.OBJ_NATIVE}))
         (then
           (call $push
             (call $native
@@ -446,7 +463,7 @@ ${indent(
                     (local.get $frame)))
                 (call $read_byte
                   (local.get $frame))))))
-      (br $break)`
+        (br $break)`,
       ],
       [
         OP_CODES.OP_SET_UPVALUE,
@@ -460,7 +477,7 @@ ${indent(
               (local.get $frame)))
           (call $peek
             (i32.const 0)))
-      (br $break)`
+        (br $break)`,
       ],
       [
         OP_CODES.OP_NOT,
@@ -548,12 +565,14 @@ ${indent(
           (call $pop))
         (if
           (i32.and
-            (call $is_string
-              (local.get $tmp))
-            (call $is_string
+            (call $is_obj_type
+              (local.get $tmp)
+              (i32.const ${OBJ_TYPE.OBJ_STRING}))
+            (call $is_obj_type
               (f64.load
                 (call $peek
-                  (i32.const 0)))))
+                  (i32.const 0)))
+              (i32.const ${OBJ_TYPE.OBJ_STRING})))
           (then
             (call $push
               (call $concatenate
@@ -728,10 +747,11 @@ ${indent(
               (br $out)))
         (i32.store
           (global.get $stack) ;; *top_of_stack
-          (i32.load
-            (i32.add
-              (local.get $frame)
-              (i32.const 8)))) ;; *slot
+          ${CallFrame.get(
+            '*slot',
+            `;;wasm
+            (local.get $frame)`,
+          )})
         (call $push
           (local.get $tmp))
         (local.set $frame

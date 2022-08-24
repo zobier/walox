@@ -1,4 +1,4 @@
-import { charToHex, indent } from './common';
+import { charToHex, indent, struct } from './common';
 
 export enum TOKENS {
   // Single-character tokens.
@@ -48,12 +48,13 @@ export enum TOKENS {
   TOKEN_EOF,
 }
 
+const Scanner = struct([
+  ['*end', 'i32'],
+  ['*current', 'i32'],
+  ['line', 'i32'],
+]);
+
 export default `;;wasm
-(; typedef struct {
-  i32 *end;
-  i32 *current;
-  i32 line;
-} Scanner ;)
 (global $scanner
   (mut i32)
   (i32.const 0))
@@ -61,26 +62,33 @@ export default `;;wasm
   (param $srcptr i32)
   (local $this i32)
   (local.set $this
-    (call $alloc
-      (i32.const 4)))
-  (i32.store
-    (local.get $this) ;; *end
+    ${Scanner.alloc()})
+  ${Scanner.set(
+    '*end',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
     (i32.add
       (local.get $srcptr)
       (i32.mul
-        (call $get_len
-          (local.get $srcptr))
-        (i32.const 4))))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 4)) ;; *current
-    (local.get $srcptr))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 8)) ;; line
-    (i32.const 1))
+      (call $get_len
+        (local.get $srcptr))
+      (i32.const 4)))`
+  )}
+  ${Scanner.set(
+    '*current',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
+    (local.get $srcptr)`
+  )}
+  ${Scanner.set(
+    'line',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
+    (i32.const 1)`
+  )}
   (global.set $scanner
     (local.get $this)))
 (func $match
@@ -146,13 +154,17 @@ export default `;;wasm
   (local.set $this
     (global.get $scanner))
   (local.set $end
-    (i32.load
-      (local.get $this))) ;; *end
+    ${Scanner.get(
+      '*end',
+      `;;wasm
+      (local.get $this)`
+    )})
   (local.set $current
-    (i32.load
-      (i32.add
-        (local.get $this)
-        (i32.const 4)))) ;; *current
+    ${Scanner.get(
+      '*current',
+      `;;wasm
+      (local.get $this)`
+    )})
   (block $out
     (block $end_whitespace
       (loop $skip_whitespace
@@ -522,11 +534,13 @@ ${indent(cases, 4)}))`
     (i32.add
       (local.get $current)
       (i32.const 4)))
-  (i32.store
-    (i32.add
-      (local.get $this)
-      (i32.const 4)) ;; *current
-      (local.get $current))
+  ${Scanner.set(
+    '*current',
+    `;;wasm
+    (local.get $this)`,
+    `;;wasm
+    (local.get $current)`
+  )}
   (local.get $result)
   (local.get $start)
   (i32.div_u
