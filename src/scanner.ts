@@ -133,7 +133,7 @@ ${enumToGlobals(TOKENS)}
         (i32.const 4)))) ;; *current
   (block $out
     (if
-      (i32.eq
+      (i32.ge_u
         (local.get $current)
         (local.get $end))
       (then
@@ -363,18 +363,16 @@ ${Object.entries({
       (then
         (block $end_identifier
           (loop $consume_identifier
-            (if
-              (i32.eq
-                (i32.add
-                  (local.get $current)
-                  (i32.const 1))
-                (local.get $end))
-              (then
-                (br $end_identifier)))
             (local.set $current
               (i32.add
                 (local.get $current)
                 (i32.const 1)))
+            (if
+              (i32.eq
+                (local.get $current)
+                (local.get $end))
+              (then
+                (br $end_identifier)))
             (local.set $char
               (i32.load8_u
                 (local.get $current)))
