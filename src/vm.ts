@@ -166,9 +166,11 @@ ${indent(watSwitch(
         (f64.neg
           (call $pop)))
       (br $break)`,
-    [OP_CODES.OP_RETURN]: `;;wasm
+    [OP_CODES.OP_PRINT]: `;;wasm
       (call $print_value
         (call $pop))
+      (br $break)`,
+    [OP_CODES.OP_RETURN]: `;;wasm
       (local.set $result
         (global.get $INTERPRET_OK))
       (br $out)`,

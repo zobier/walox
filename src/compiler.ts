@@ -58,6 +58,24 @@ ${enumToGlobals(PRECEDENCE)}
       (call $tokenError
         (local.get $expected)
         (global.get $current)))))
+(func $check
+  (param $token i32)
+  (result i32)
+  (i32.eq
+    (local.get $token)
+    (global.get $current)))
+(func $match_token
+  (param $token i32)
+  (result i32)
+  (if
+    (i32.eqz
+      (call $check
+        (local.get $token)))
+    (then
+      (return
+        (i32.const 0))))
+  (call $advance)
+  (i32.const 1))
 (func $get_precedence
   (param $operator i32)
   (result i32)
@@ -150,6 +168,20 @@ ${indent(watSwitch(
 (func $expression
   (call $parse_precedence
     (global.get $PREC_ASSIGNMENT)))
+(func $print_statement
+  (call $expression)
+  (call $consume
+    (global.get $TOKEN_SEMICOLON))
+  (call $write_chunk
+    (global.get $OP_PRINT)))
+(func $declaration
+  (call $statement))
+(func $statement
+  (if
+    (call $match_token
+      (global.get $TOKEN_PRINT))
+    (then
+      (call $print_statement))))
 (func $number
   (call $write_chunk
     (global.get $OP_CONSTANT))
@@ -276,10 +308,14 @@ ${indent(watSwitch(
   (call $init_scanner
     (local.get $srcptr))
   (call $advance)
-  ;; while !EOF declaration
-        (call $expression)
-        (call $consume
+  (block $out
+    (loop $not_eof
+      (if
+        (call $match_token
           (global.get $TOKEN_EOF))
+        (then
+          (br $out)))
+      (call $declaration)))
   (call $write_chunk
     (global.get $OP_RETURN))
   )
