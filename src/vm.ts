@@ -147,10 +147,10 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (i32.add
         (global.get $stack)
         (i32.const 4))))
-  (call $dissasemble
-    (call $get_chunk
-      (local.get $function)))
-(block $out
+;;  (call $dissasemble
+;;    (call $get_chunk
+;;      (local.get $function)))
+  (block $out
     (loop $run
       (local.set $code
         (i32.load8_u

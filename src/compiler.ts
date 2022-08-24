@@ -50,26 +50,36 @@ typedef struct {
   (mut i32)
   (i32.const 0))
 (func $init_compiler
-  (global.set $compiler
+  (local $compiler i32)
+  (local.set $compiler
     (call $alloc
       (i32.const 5)))
   (i32.store
-    (i32.add
-      (global.get $compiler)
-      (i32.const 4)) ;; *function
-        (call $as_obj
-          (call $new_function)))
+    (local.get $compiler) ;; *enclosing
+    (global.get $compiler))
   (i32.store
     (i32.add
-      (global.get $compiler)
+      (local.get $compiler)
+      (i32.const 4)) ;; *function
+    (call $as_obj
+      (call $new_function)))
+  (i32.store
+    (i32.add
+      (local.get $compiler)
       (i32.const 8)) ;; *locals
     (call $alloc
       (i32.const 512)))
+  (global.set $compiler
+    (local.get $compiler))
   (call $add_local
     (call $as_obj
       (call $new_string
         (call $alloc
           (i32.const 0)))))) ;; ""
+(func $get_enclosing
+  (result i32)
+  (i32.load
+    (global.get $compiler))) ;; *enclosing
 (func $get_function
   (result f64)
   (call $obj_val
@@ -470,6 +480,7 @@ ${indent(
   (call $consume
     (global.get $TOKEN_RIGHT_BRACE)))
 (func $function
+  (local $function f64)
   (call $init_compiler)
   (call $begin_scope)
   (call $consume
@@ -479,7 +490,17 @@ ${indent(
   (call $consume
     (global.get $TOKEN_LEFT_BRACE))
   (call $block)
-  )
+  (local.set $function
+    (call $end_compiler))
+  (call $write_chunk
+    (call $get_chunk
+      (call $get_function))
+    (global.get $OP_CONSTANT))
+  (call $write_chunk
+    (call $get_chunk
+      (call $get_function))
+    (call $write_value_array
+      (local.get $function))))
 (func $fun_declaration
   (local $global i32)
   (local.set $global
@@ -1085,11 +1106,16 @@ ${indent(
       (br $pop_local))))
 (func $end_compiler
   (result f64)
+  (local $function f64)
+  (local.set $function
+    (call $get_function))
   (call $write_chunk
     (call $get_chunk
-      (call $get_function))
+      (local.get $function))
     (global.get $OP_RETURN))
-  (call $get_function))
+  (global.set $compiler
+    (call $get_enclosing))
+  (local.get $function))
 (func $compile
   (param $srcptr i32)
   (result f64)
