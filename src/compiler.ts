@@ -126,6 +126,20 @@ ${Object.entries({
                 (global.get $start)
                 (global.get $len))))
           (br $run)))
+${Object.entries({
+  '$TOKEN_NIL': '$OP_NIL',
+  '$TOKEN_TRUE': '$OP_TRUE',
+  '$TOKEN_FALSE': '$OP_FALSE',
+}).map(([token, op]) => `;;wasm
+    (if
+      (i32.eq
+        (local.get $token)
+        (global.get ${token}))
+      (then
+        (call $write_chunk
+          (global.get ${op}))
+        (br $run)))
+`).join('')}
       (if
         (i32.eq
           (local.get $token)

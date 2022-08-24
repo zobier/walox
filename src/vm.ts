@@ -44,6 +44,30 @@ ${enumToGlobals(INTERPRET_RESULT)}
       (if
         (i32.eq
           (local.get $code)
+          (global.get $OP_NIL))
+        (then
+          (call $push
+            (f64.reinterpret_i64
+              (global.get $NIL)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_TRUE))
+        (then
+          (call $push
+            (f64.reinterpret_i64
+              (global.get $TRUE)))))
+      (if
+        (i32.eq
+          (local.get $code)
+          (global.get $OP_FALSE))
+        (then
+          (call $push
+            (f64.reinterpret_i64
+              (global.get $FALSE)))))
+      (if
+        (i32.eq
+          (local.get $code)
           (global.get $OP_ADD))
         (then
           (local.set $tmp

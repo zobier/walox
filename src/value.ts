@@ -1,4 +1,14 @@
+import { toHex } from "./common";
+
 export default `;;wasm
+(global $QNAN i64
+  (i64.const 0x7ffc000000000000))
+(global $NIL i64
+  (i64.const 0x7ffc000000000001))
+(global $TRUE i64
+  (i64.const 0x7ffc000000000002))
+(global $FALSE i64
+  (i64.const 0x7ffc000000000003))
 (; typedef struct {
   i32 count;
   i32 capacity;

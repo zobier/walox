@@ -2,6 +2,9 @@ import { enumToGlobals } from './common';
 
 export enum OP_CODES {
   OP_CONSTANT = 1,
+  OP_NIL,
+  OP_TRUE,
+  OP_FALSE,
   OP_ADD,
   OP_SUBTRACT,
   OP_MULTIPLY,
