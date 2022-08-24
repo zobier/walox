@@ -16,7 +16,7 @@ export default `;;wasm
 } ObjString
 typeder struct {
   i32 OBJ_TYPE;
-  i32 *value
+  i32 *value;
 } ObjUpvalue
 typedef struct {
   i32 OBJ_TYPE;
@@ -32,7 +32,7 @@ typedef struct {
 typedef struct {
   i32 OBJ_TYPE;
   i32 *function;
-  i32 **upvalue
+  i32 **upvalue;
 } ObjClosure ;)
 ${enumToGlobals(OBJ_TYPE)}
 (func $hash

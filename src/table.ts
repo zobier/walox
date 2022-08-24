@@ -1,7 +1,7 @@
 export default `;;wasm
 (; typedef struct {
-  i32 *key
-  f64 value
+  i32 *key;
+  f64 value;
 } Entry
 typedef struct {
   i32 count;

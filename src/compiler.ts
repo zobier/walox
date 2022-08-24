@@ -18,20 +18,21 @@ export enum PRECEDENCE {
 export default `;;wasm
 ${enumToGlobals(PRECEDENCE)}
 (; typedef struct {
-  i32 *name
-  i32 depth
+  i32 *name;
+  i32 depth;
+  i32 is_captured;
 } Local
 typedef struct {
   i32 is_local;
   i32 index;
 } Upvalue
 typedef struct {
-  i32 *enclosing
-  i32 *function
-  i32 *locals
-  i32 local_count
-  i32 *upvalues
-  i32 scope_depth
+  i32 *enclosing;
+  i32 *function;
+  i32 *locals;
+  i32 local_count;
+  i32 *upvalues;
+  i32 scope_depth;
 } Compiler ;)
 (global $previous
   (mut i32)
@@ -73,7 +74,7 @@ typedef struct {
       (local.get $compiler)
       (i32.const 8)) ;; *locals
     (call $alloc
-      (i32.const 512)))
+      (i32.const 768)))
   (i32.store
     (i32.add
       (local.get $compiler)
@@ -142,6 +143,33 @@ typedef struct {
       (global.get $compiler)
       (i32.const 20)) ;; scope_depth
     (local.get $depth)))
+(func $get_is_captured
+  (param $compiler i32)
+  (param $i i32)
+  (result i32)
+  (i32.load
+    (i32.add
+      (i32.add
+        (call $get_locals
+          (local.get $compiler))
+        (i32.mul
+          (local.get $i)
+          (i32.const 12))) ;; sizeof Local
+      (i32.const 4)))) ;; is_captured
+(func $set_is_captured
+  (param $compiler i32)
+  (param $i i32)
+  (param $is_captured i32)
+  (i32.store
+    (i32.add
+      (i32.add
+        (call $get_locals
+          (local.get $compiler))
+        (i32.mul
+          (local.get $i)
+          (i32.const 12))) ;; sizeof Local
+      (i32.const 4)) ;; is_captured
+    (local.get $is_captured)))
 (func $advance
   (global.set $previous
     (global.get $current))
@@ -415,7 +443,7 @@ ${indent(
                 (local.get $compiler))
               (i32.mul
                 (local.get $i)
-                (i32.const 8))))) ;; sizeof Local
+                (i32.const 12))))) ;; sizeof Local
         (then
           (if
             (call $str_cmp
@@ -532,6 +560,10 @@ ${indent(
       (local.get $local)
       (i32.const -1))
     (then
+      (call $set_is_captured
+        (local.get $enclosing)
+        (local.get $local)
+        (i32.const 1))
       (return
         (call $add_upvalue
           (local.get $compiler)
@@ -562,7 +594,7 @@ ${indent(
       (i32.mul
         (call $get_local_count ;; should check this is < 256
           (global.get $compiler))
-        (i32.const 8)))) ;; sizeof Local
+        (i32.const 12)))) ;; sizeof Local
   (i32.store
     (local.get $localptr)
     (local.get $nameptr))
@@ -1296,17 +1328,20 @@ ${indent(
       (call $get_scope_depth)
       (i32.const 1))))
 (func $end_scope
+  (local $local_count i32)
   (call $set_scope_depth
     (i32.sub
       (call $get_scope_depth)
       (i32.const 1)))
   (block $out
     (loop $pop_local
+      (local.set $local_count
+        (call $get_local_count
+          (global.get $compiler)))
       (br_if $out
         (i32.or
           (i32.eqz
-            (call $get_local_count
-              (global.get $compiler)))
+            (local.get $local_count))
           (i32.eq
             (i32.load
               (i32.add
@@ -1314,19 +1349,27 @@ ${indent(
                   (call $get_locals
                     (global.get $compiler))
                   (i32.mul
-                    (call $get_local_count
-                      (global.get $compiler))
-                    (i32.const 8))) ;; sizeof Local
+                    (local.get $local_count)
+                    (i32.const 12))) ;; sizeof Local
                 (i32.const 4))) ;; depth
             (call $get_scope_depth))))
-      (call $emit_byte
-        (global.get $OP_POP))
+      (local.set $local_count
+        (i32.sub
+          (local.get $local_count)
+          (i32.const 1)))
+      (if
+        (call $get_is_captured
+          (global.get $compiler)
+          (local.get $local_count))
+        (then
+          (call $emit_byte
+            (global.get $OP_CLOSE_UPVALUE)))
+        (else
+          (call $emit_byte
+            (global.get $OP_POP))))
       (call $set_local_count
         (global.get $compiler)
-        (i32.sub
-          (call $get_local_count
-            (global.get $compiler))
-          (i32.const 1)))
+        (local.get $local_count))
       (br $pop_local))))
 (func $emit_return
   (call $emit_bytes
