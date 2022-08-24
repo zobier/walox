@@ -153,13 +153,6 @@ ${enumToGlobals(TOKENS)}
                         (local.get $current)
                         (i32.const 1)))
                     (if
-                      (call $match
-                        (local.get $end)
-                        (local.get $current)
-                        (i32.const ${charToHex('\n')}))
-                      (then
-                        (br $skip_whitespace)))
-                    (if
                       (i32.eq
                         (local.get $current)
                         (local.get $end))
@@ -167,6 +160,13 @@ ${enumToGlobals(TOKENS)}
                         (local.set $result
                           (global.get $TOKEN_EOF))
                         (br $out)))
+                    (if
+                      (call $match
+                        (local.get $end)
+                        (local.get $current)
+                        (i32.const ${charToHex('\n')}))
+                      (then
+                        (br $skip_whitespace)))
                     (br $comment)))
                 (else
                   (br $done))
@@ -187,14 +187,14 @@ ${Object.entries({
   '/': '$TOKEN_SLASH',
   '*': '$TOKEN_STAR',
 }).map(([char, token]) => `;;wasm
-      (if
-        (i32.eq
-          (local.get $char)
-          (i32.const ${charToHex(char)}))
-        (then
-          (local.set $result
-            (global.get ${token}))
-          (br $out)))
+    (if
+      (i32.eq
+        (local.get $char)
+        (i32.const ${charToHex(char)}))
+      (then
+        (local.set $result
+          (global.get ${token}))
+        (br $out)))
 `).join('')}
 ${Object.entries({
   '!': '$TOKEN_BANG',
@@ -202,28 +202,60 @@ ${Object.entries({
   '<': '$TOKEN_LESS',
   '>': '$TOKEN_GREATER',
 }).map(([char, token]) => `;;wasm
-      (if
-        (i32.eq
-          (local.get $char)
-          (i32.const ${charToHex(char)}))
-        (then
+    (if
+      (i32.eq
+        (local.get $char)
+        (i32.const ${charToHex(char)}))
+      (then
+        (if
+          (call $match
+            (local.get $end)
+            (local.get $current)
+            (i32.const ${charToHex('=')}))
+          (then
+            (local.set $current
+              (i32.add
+                (local.get $current)
+                (i32.const 1)))
+            (local.set $result
+              (global.get ${token}_EQUAL)))
+          (else
+            (local.set $result
+              (global.get ${token}))))
+        (br $out)))
+`).join('')}
+    (if
+      (i32.eq
+        (local.get $char)
+        (i32.const ${charToHex('"')}))
+      (then
+        (loop $consume_string
+          (local.set $current
+            (i32.add
+              (local.get $current)
+              (i32.const 1)))
+          (if
+            (i32.eq
+              (local.get $current)
+              (local.get $end))
+            (then
+              (local.set $result
+                (global.get $TOKEN_EOF))
+              (br $out)))
           (if
             (call $match
               (local.get $end)
               (local.get $current)
-              (i32.const ${charToHex('=')}))
+              (i32.const ${charToHex('"')}))
             (then
+              (local.set $result
+                (global.get $TOKEN_STRING))
               (local.set $current
                 (i32.add
                   (local.get $current)
-                  (i32.const 1)))
-              (local.set $result
-                (global.get ${token}_EQUAL)))
-            (else
-              (local.set $result
-                (global.get ${token}))))
-          (br $out)))
-`).join('')}
+                  (i32.const 1))) ;; consume closing quote
+              (br $out)))
+          (br $consume_string))))
   ) ;; out
   (local.set $start
       (local.get $current))
