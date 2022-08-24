@@ -10,13 +10,13 @@ export const enumToGlobals = (e: object) =>
 
 export const watSwitch = (
   value: string,
-  cases: Record<number, string>,
+  cases: [number, string][],
   default_case: string = '',
 ) => {
-  const { head, tail, targets } = Object.entries(cases).reduce(
+  const { head, tail, targets } = cases.reduce(
     ({ head, tail, targets }, [target, consequent], i) => {
       const label = `$case${i}`;
-      (targets[parseInt(target)] as any) = label;
+      (targets[target] as any) = label;
       return {
         head: `;;wasm
   (block ${label}

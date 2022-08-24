@@ -56,197 +56,275 @@ ${indent(
   watSwitch(
     `;;wasm
     (local.get $code)`,
-    {
-      [OP_CODES.OP_CONSTANT]: `;;wasm
-      (call $push
-        (call $get_value
-          (call $read_byte)))
-      (br $break)`,
-      [OP_CODES.OP_NIL]: `;;wasm
-      (call $push
-        (f64.reinterpret_i64
-          (global.get $NIL)))
-      (br $break)`,
-      [OP_CODES.OP_TRUE]: `;;wasm
-      (call $push
-        (f64.reinterpret_i64
-          (global.get $TRUE)))
-      (br $break)`,
-      [OP_CODES.OP_FALSE]: `;;wasm
-      (call $push
-        (f64.reinterpret_i64
-          (global.get $FALSE)))
-      (br $break)`,
-      [OP_CODES.OP_POP]: `;;wasm
-      (call $pop)
-      (br $break)`,
-      [OP_CODES.OP_GET_LOCAL]: `;;wasm
-      (call $push
-        (call $stack_get
-          (call $read_byte)))
-      (br $break)`,
-      [OP_CODES.OP_GET_GLOBAL]: `;;wasm
-      (call $push
-        (call $table_get
+    [
+      [
+        OP_CODES.OP_CONSTANT,
+        `;;wasm
+        (call $push
           (call $get_value
-            (call $read_byte))))
-      (br $break)`,
-      [OP_CODES.OP_DEFINE_GLOBAL]: `;;wasm
-      (call $table_set
-        (call $get_value
-          (call $read_byte))
-        (call $pop))
-      (br $break)`,
-      [OP_CODES.OP_SET_LOCAL]: `;;wasm
-      (call $stack_set
-        (call $read_byte)
-        (call $peek))
-      (br $break)`,
-      [OP_CODES.OP_SET_GLOBAL]: `;;wasm
-      (call $table_set ;; todo: check if not exists (new key)
-        (call $get_value
-          (call $read_byte))
-        (call $peek))
-      (br $break)`,
-      [OP_CODES.OP_NOT]: `;;wasm
-      (call $push
-        (call $bool_val
-          (i32.eqz
-            (call $as_bool
-              (call $pop)))))
-      (br $break)`,
-      [OP_CODES.OP_NOT_EQUAL]: `;;wasm
-      (call $push
-        (call $bool_val
-          (i32.eqz
+            (call $read_byte)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NIL,
+        `;;wasm
+        (call $push
+          (f64.reinterpret_i64
+            (global.get $NIL)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_TRUE,
+        `;;wasm
+        (call $push
+          (f64.reinterpret_i64
+            (global.get $TRUE)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_FALSE,
+        `;;wasm
+        (call $push
+          (f64.reinterpret_i64
+            (global.get $FALSE)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_POP,
+        `;;wasm
+        (call $pop)
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_GET_LOCAL,
+        `;;wasm
+        (call $push
+          (call $stack_get
+            (call $read_byte)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_GET_GLOBAL,
+        `;;wasm
+        (call $push
+          (call $table_get
+            (call $get_value
+              (call $read_byte))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_DEFINE_GLOBAL,
+        `;;wasm
+        (call $table_set
+          (call $get_value
+            (call $read_byte))
+          (call $pop))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_SET_LOCAL,
+        `;;wasm
+        (call $stack_set
+          (call $read_byte)
+          (call $peek))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_SET_GLOBAL,
+        `;;wasm
+        (call $table_set ;; todo: check if not exists (new key)
+          (call $get_value
+            (call $read_byte))
+          (call $peek))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NOT,
+        `;;wasm
+        (call $push
+          (call $bool_val
+            (i32.eqz
+              (call $as_bool
+                (call $pop)))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NOT_EQUAL,
+        `;;wasm
+        (call $push
+          (call $bool_val
+            (i32.eqz
+              (call $equal
+                (call $pop)
+                (call $pop)))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_EQUAL,
+        `;;wasm
+        (call $push
+          (call $bool_val
             (call $equal
               (call $pop)
-              (call $pop)))))
-      (br $break)`,
-      [OP_CODES.OP_EQUAL]: `;;wasm
-      (call $push
-        (call $bool_val
-          (call $equal
-            (call $pop)
-            (call $pop))))
-      (br $break)`,
-      [OP_CODES.OP_GREATER]: `;;wasm
-      (local.set $tmp ;; could invert comparison logic instead but harder to read
-        (call $pop))
-      (call $push
-        (call $bool_val
-          (f64.gt
-            (call $pop)
-            (local.get $tmp))))
-      (br $break)`,
-      [OP_CODES.OP_NOT_LESS]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (call $bool_val
-          (f64.ge
-            (call $pop)
-            (local.get $tmp))))
-      (br $break)`,
-      [OP_CODES.OP_LESS]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (call $bool_val
-          (f64.lt
-            (call $pop)
-            (local.get $tmp))))
-      (br $break)`,
-      [OP_CODES.OP_NOT_GREATER]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (call $bool_val
-          (f64.le
-            (call $pop)
-            (local.get $tmp))))
-      (br $break)`,
-      [OP_CODES.OP_ADD]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (if
-        (i32.and
-          (call $is_string
-            (local.get $tmp))
-          (call $is_string
-            (call $peek)))
-        (then
-          (call $push
-            (call $concatenate
-              (call $get_string
-                (call $pop))
-              (call $get_string
-                (local.get $tmp)))))
-        (else
-          (call $push
-            (f64.add
+              (call $pop))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_GREATER,
+        `;;wasm
+        (local.set $tmp ;; could invert comparison logic instead but harder to read
+          (call $pop))
+        (call $push
+          (call $bool_val
+            (f64.gt
               (call $pop)
-              (local.get $tmp)))))
-      (br $break)`,
-      [OP_CODES.OP_SUBTRACT]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (f64.sub
-          (call $pop)
-          (local.get $tmp)))
-      (br $break)`,
-      [OP_CODES.OP_MULTIPLY]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (f64.mul
-          (call $pop)
-          (local.get $tmp)))
-      (br $break)`,
-      [OP_CODES.OP_DIVIDE]: `;;wasm
-      (local.set $tmp
-        (call $pop))
-      (call $push
-        (f64.div
-          (call $pop)
-          (local.get $tmp)))
-      (br $break)`,
-      [OP_CODES.OP_NEGATE]: `;;wasm
-      (call $push
-        (f64.neg
-          (call $pop)))
-      (br $break)`,
-      [OP_CODES.OP_PRINT]: `;;wasm
-      (call $print_value
-        (call $pop))
-      (br $break)`,
-      [OP_CODES.OP_JUMP]: `;;wasm
-      (local.set $offset
-        (call $read_short))
-      (global.set $ip
-        (i32.add
-          (global.get $ip)
-          (local.get $offset)))
-      (br $break)`,
-      [OP_CODES.OP_JUMP_IF_FALSE]: `;;wasm
-      (local.set $offset
-        (call $read_short))
-      (if
-        (i32.eqz
-          (call $as_bool
-            (call $peek)))
-        (then
-          (global.set $ip
-            (i32.add
-              (global.get $ip)
-              (local.get $offset)))))
-      (br $break)`,
-      [OP_CODES.OP_RETURN]: `;;wasm
-      (local.set $result
-        (global.get $INTERPRET_OK))
-      (br $out)`,
-    },
+              (local.get $tmp))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NOT_LESS,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (call $bool_val
+            (f64.ge
+              (call $pop)
+              (local.get $tmp))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_LESS,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (call $bool_val
+            (f64.lt
+              (call $pop)
+              (local.get $tmp))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NOT_GREATER,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (call $bool_val
+            (f64.le
+              (call $pop)
+              (local.get $tmp))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_ADD,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (if
+          (i32.and
+            (call $is_string
+              (local.get $tmp))
+            (call $is_string
+              (call $peek)))
+          (then
+            (call $push
+              (call $concatenate
+                (call $get_string
+                  (call $pop))
+                (call $get_string
+                  (local.get $tmp)))))
+          (else
+            (call $push
+              (f64.add
+                (call $pop)
+                (local.get $tmp)))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_SUBTRACT,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (f64.sub
+            (call $pop)
+            (local.get $tmp)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_MULTIPLY,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (f64.mul
+            (call $pop)
+            (local.get $tmp)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_DIVIDE,
+        `;;wasm
+        (local.set $tmp
+          (call $pop))
+        (call $push
+          (f64.div
+            (call $pop)
+            (local.get $tmp)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_NEGATE,
+        `;;wasm
+        (call $push
+          (f64.neg
+            (call $pop)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_PRINT,
+        `;;wasm
+        (call $print_value
+          (call $pop))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_JUMP,
+        `;;wasm
+        (local.set $offset
+          (call $read_short))
+        (global.set $ip
+          (i32.add
+            (global.get $ip)
+            (local.get $offset)))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_JUMP_IF_FALSE,
+        `;;wasm
+        (local.set $offset
+          (call $read_short))
+        (if
+          (i32.eqz
+            (call $as_bool
+              (call $peek)))
+          (then
+            (global.set $ip
+              (i32.add
+                (global.get $ip)
+                (local.get $offset)))))
+        (br $break)`,
+      ],
+      [
+        OP_CODES.OP_RETURN,
+        `;;wasm
+        (local.set $result
+          (global.get $INTERPRET_OK))
+        (br $out)`,
+      ],
+    ],
   ),
   6,
 )}

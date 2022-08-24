@@ -97,30 +97,42 @@ ${indent(
   watSwitch(
     `;;wasm
     (local.get $operator)`,
-    {
-      [TOKENS.TOKEN_PLUS]: '',
-      [TOKENS.TOKEN_MINUS]: `;;wasm
-      (local.set $result
-        (global.get $PREC_TERM))
-      (br $break)`,
-      [TOKENS.TOKEN_STAR]: '',
-      [TOKENS.TOKEN_SLASH]: `;;wasm
-      (local.set $result
-        (global.get $PREC_FACTOR))
-      (br $break)`,
-      [TOKENS.TOKEN_BANG_EQUAL]: '',
-      [TOKENS.TOKEN_EQUAL_EQUAL]: `;;wasm
-      (local.set $result
-        (global.get $PREC_EQUALITY))
-      (br $break)`,
-      [TOKENS.TOKEN_GREATER]: '',
-      [TOKENS.TOKEN_GREATER_EQUAL]: '',
-      [TOKENS.TOKEN_LESS]: '',
-      [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
-      (local.set $result
-        (global.get $PREC_COMPARISON))
-      (br $break)`,
-    },
+    [
+      [TOKENS.TOKEN_PLUS, ''],
+      [
+        TOKENS.TOKEN_MINUS,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_TERM))
+        (br $break)`,
+      ],
+      [TOKENS.TOKEN_STAR, ''],
+      [
+        TOKENS.TOKEN_SLASH,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_FACTOR))
+        (br $break)`,
+      ],
+      [TOKENS.TOKEN_BANG_EQUAL, ''],
+      [
+        TOKENS.TOKEN_EQUAL_EQUAL,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_EQUALITY))
+        (br $break)`,
+      ],
+      [TOKENS.TOKEN_GREATER, ''],
+      [TOKENS.TOKEN_GREATER_EQUAL, ''],
+      [TOKENS.TOKEN_LESS, ''],
+      [
+        TOKENS.TOKEN_LESS_EQUAL,
+        `;;wasm
+        (local.set $result
+          (global.get $PREC_COMPARISON))
+        (br $break)`,
+      ],
+    ],
     `;;wasm
     (local.set $result
       (global.get $PREC_NONE))`,
@@ -135,29 +147,47 @@ ${indent(
   watSwitch(
     `;;wasm
     (global.get $previous)`,
-    {
-      [TOKENS.TOKEN_LEFT_PAREN]: `;;wasm
-      (call $grouping)
-      (br $break)`,
-      [TOKENS.TOKEN_NUMBER]: `;;wasm
-      (call $number)
-      (br $break)`,
-      [TOKENS.TOKEN_STRING]: `;;wasm
-      (call $string)
-      (br $break)`,
-      [TOKENS.TOKEN_MINUS]: '',
-      [TOKENS.TOKEN_BANG]: `;;wasm
-      (call $unary)
-      (br $break)`,
-      [TOKENS.TOKEN_FALSE]: '',
-      [TOKENS.TOKEN_TRUE]: '',
-      [TOKENS.TOKEN_NIL]: `;;wasm
-      (call $literal)
-      (br $break)`,
-      [TOKENS.TOKEN_IDENTIFIER]: `;;wasm
-      (call $variable)
-      (br $break)`,
-    },
+    [
+      [
+        TOKENS.TOKEN_LEFT_PAREN,
+        `;;wasm
+        (call $grouping)
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_NUMBER,
+        `;;wasm
+        (call $number)
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_STRING,
+        `;;wasm
+        (call $string)
+        (br $break)`,
+      ],
+      [TOKENS.TOKEN_MINUS, ''],
+      [
+        TOKENS.TOKEN_BANG,
+        `;;wasm
+        (call $unary)
+        (br $break)`,
+      ],
+      [TOKENS.TOKEN_FALSE, ''],
+      [TOKENS.TOKEN_TRUE, ''],
+      [
+        TOKENS.TOKEN_NIL,
+        `;;wasm
+        (call $literal)
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_IDENTIFIER,
+        `;;wasm
+        (call $variable)
+        (br $break)`,
+      ],
+    ],
   ),
   2,
 )} ;; default should be "expect expression" error
@@ -175,20 +205,23 @@ ${indent(
   watSwitch(
     `;;wasm
     (global.get $previous)`,
-    {
-      [TOKENS.TOKEN_PLUS]: '',
-      [TOKENS.TOKEN_MINUS]: '',
-      [TOKENS.TOKEN_STAR]: '',
-      [TOKENS.TOKEN_SLASH]: '',
-      [TOKENS.TOKEN_BANG_EQUAL]: '',
-      [TOKENS.TOKEN_EQUAL_EQUAL]: '',
-      [TOKENS.TOKEN_GREATER]: '',
-      [TOKENS.TOKEN_GREATER_EQUAL]: '',
-      [TOKENS.TOKEN_LESS]: '',
-      [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
-      (call $binary)
-      (br $break)`,
-    },
+    [
+      [TOKENS.TOKEN_PLUS, ''],
+      [TOKENS.TOKEN_MINUS, ''],
+      [TOKENS.TOKEN_STAR, ''],
+      [TOKENS.TOKEN_SLASH, ''],
+      [TOKENS.TOKEN_BANG_EQUAL, ''],
+      [TOKENS.TOKEN_EQUAL_EQUAL, ''],
+      [TOKENS.TOKEN_GREATER, ''],
+      [TOKENS.TOKEN_GREATER_EQUAL, ''],
+      [TOKENS.TOKEN_LESS, ''],
+      [
+        TOKENS.TOKEN_LESS_EQUAL,
+        `;;wasm
+        (call $binary)
+        (br $break)`,
+      ],
+    ],
   ),
   8,
 )}
@@ -504,16 +537,22 @@ ${indent(
   watSwitch(
     `;;wasm
     (local.get $operator)`,
-    {
-      [TOKENS.TOKEN_MINUS]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NEGATE))
-      (br $break)`,
-      [TOKENS.TOKEN_BANG]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NOT))
-      (br $break)`,
-    },
+    [
+      [
+        TOKENS.TOKEN_MINUS,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NEGATE))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_BANG,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NOT))
+        (br $break)`,
+      ],
+    ],
   ),
   2,
 )}
@@ -531,48 +570,78 @@ ${indent(
   watSwitch(
     `;;wasm
     (local.get $operator)`,
-    {
-      [TOKENS.TOKEN_PLUS]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_ADD))
-      (br $break)`,
-      [TOKENS.TOKEN_MINUS]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_SUBTRACT))
-      (br $break)`,
-      [TOKENS.TOKEN_STAR]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_MULTIPLY))
-      (br $break)`,
-      [TOKENS.TOKEN_SLASH]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_DIVIDE))
-      (br $break)`,
-      [TOKENS.TOKEN_BANG_EQUAL]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NOT_EQUAL))
-      (br $break)`,
-      [TOKENS.TOKEN_EQUAL_EQUAL]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_EQUAL))
-      (br $break)`,
-      [TOKENS.TOKEN_GREATER]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_GREATER))
-      (br $break)`,
-      [TOKENS.TOKEN_GREATER_EQUAL]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NOT_LESS))
-      (br $break)`,
-      [TOKENS.TOKEN_LESS]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_LESS))
-      (br $break)`,
-      [TOKENS.TOKEN_LESS_EQUAL]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NOT_GREATER))
-      (br $break)`,
-    },
+    [
+      [
+        TOKENS.TOKEN_PLUS,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_ADD))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_MINUS,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_SUBTRACT))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_STAR,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_MULTIPLY))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_SLASH,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_DIVIDE))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_BANG_EQUAL,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NOT_EQUAL))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_EQUAL_EQUAL,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_EQUAL))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_GREATER,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_GREATER))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_GREATER_EQUAL,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NOT_LESS))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_LESS,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_LESS))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_LESS_EQUAL,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NOT_GREATER))
+        (br $break)`,
+      ],
+    ],
   ),
   2,
 )}
@@ -585,20 +654,29 @@ ${indent(
   watSwitch(
     `;;wasm
     (local.get $literal)`,
-    {
-      [TOKENS.TOKEN_FALSE]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_FALSE))
-      (br $break)`,
-      [TOKENS.TOKEN_TRUE]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_TRUE))
-      (br $break)`,
-      [TOKENS.TOKEN_NIL]: `;;wasm
-      (call $write_chunk
-        (global.get $OP_NIL))
-      (br $break)`,
-    },
+    [
+      [
+        TOKENS.TOKEN_FALSE,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_FALSE))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_TRUE,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_TRUE))
+        (br $break)`,
+      ],
+      [
+        TOKENS.TOKEN_NIL,
+        `;;wasm
+        (call $write_chunk
+          (global.get $OP_NIL))
+        (br $break)`,
+      ],
+    ],
   ),
   2,
 )}

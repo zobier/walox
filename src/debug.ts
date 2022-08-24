@@ -1,5 +1,5 @@
-import { OP_CODES } from "./chunk";
-import { watSwitch } from "./common";
+import { OP_CODES } from './chunk';
+import { watSwitch } from './common';
 
 // todo: add the rest of the instructions to the disassembler
 export default `;;wasm
@@ -25,31 +25,37 @@ export default `;;wasm
 ${watSwitch(
   `;;wasm
   (local.get $code)`,
-  {
-    [OP_CODES.OP_CONSTANT]: `;;wasm
-    (call $print_value
-      (call $get_value
-        (i32.load8_u
+  [
+    [
+      OP_CODES.OP_CONSTANT,
+      `;;wasm
+      (call $print_value
+        (call $get_value
+          (i32.load8_u
+            (call $get_codeptr
+              (local.tee $i
+                (i32.add
+                  (local.get $i)
+                  (i32.const 1)))))))
+      (br $break)`,
+    ],
+    [OP_CODES.OP_JUMP, ''],
+    [
+      OP_CODES.OP_JUMP_IF_FALSE,
+      `;;wasm
+      (call $logNum
+        (i32.load16_u
           (call $get_codeptr
-            (local.tee $i
-              (i32.add
-                (local.get $i)
-                (i32.const 1)))))))
-    (br $break)`,
-    [OP_CODES.OP_JUMP]: '',
-    [OP_CODES.OP_JUMP_IF_FALSE]: `;;wasm
-    (call $logNum
-      (i32.load16_u
-        (call $get_codeptr
-          (i32.add
-            (local.get $i)
-            (i32.const 1)))))
-    (local.set $i
-      (i32.add
-        (local.get $i)
-        (i32.const 2)))
-    (br $break)`,
-  }
+            (i32.add
+              (local.get $i)
+              (i32.const 1)))))
+      (local.set $i
+        (i32.add
+          (local.get $i)
+          (i32.const 2)))
+      (br $break)`,
+    ],
+  ],
 )}
     (br_if $loop
       (i32.lt_s
