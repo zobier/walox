@@ -9,63 +9,153 @@ export enum INTERPRET_RESULT {
 
 export default `;;wasm
 ${enumToGlobals(INTERPRET_RESULT)}
-(global $ip
+(; typedef struct {
+  i32 *function;
+  i32 *ip;
+  i32 *slot;
+} CallFrame ;)
+(global $call_frames
+  (mut i32)
+  (i32.const 0))
+(global $frame_count
   (mut i32)
   (i32.const 0))
 (func $read_byte
-  (param $chunk i32)
+  (param $frame i32)
   (result i32)
-  (global.set $ip
+  (call $set_ip
+    (local.get $frame)
     (i32.add
-      (global.get $ip)
+      (call $get_ip
+        (local.get $frame))
       (i32.const 1)))
   (i32.load8_u
-    (call $get_codeptr
-      (local.get $chunk)
-      (global.get $ip))))
+    (call $get_ip
+      (local.get $frame))))
 (func $read_short
-  (param $chunk i32)
+  (param $frame i32)
   (result i32)
-  (local $cur i32)
-  (local.set $cur
-    (global.get $ip))
-  (global.set $ip
+  (local $ip i32)
+  (local.set $ip
+    (call $get_ip
+      (local.get $frame)))
+  (call $set_ip
+    (local.get $frame)
     (i32.add
-      (local.get $cur)
+      (local.get $ip)
       (i32.const 2)))
   (i32.load16_u
-    (call $get_codeptr
-      (local.get $chunk)
+    (i32.add
+      (local.get $ip)
+      (i32.const 1))))
+(func $add_frame
+  (param $funcptr i32)
+  (param $ip i32)
+  (param $stackptr i32)
+  (result i32)
+  (local $frameptr i32)
+  (local.set $frameptr
+    (i32.add
+      (global.get $call_frames)
+      (i32.mul
+        (global.get $frame_count)
+        (i32.const 12))))
+  (i32.store
+    (local.get $frameptr) ;; *function
+    (local.get $funcptr))
+  (i32.store
+    (i32.add
+      (local.get $frameptr)
+      (i32.const 4)) ;; *ip
+    (local.get $ip))
+  (i32.store
+    (i32.add
+      (local.get $frameptr)
+      (i32.const 8)) ;; *slot
+    (local.get $stackptr))
+  (global.set $frame_count
+    (i32.add
+      (global.get $frame_count)
+      (i32.const 1)))
+  (local.get $frameptr))
+(func $get_ip
+  (param $frameptr i32)
+  (result i32)
+  (i32.load
+    (i32.add
+      (local.get $frameptr)
+      (i32.const 4)))) ;; *ip
+(func $set_ip
+  (param $frameptr i32)
+  (param $ip i32)
+  (i32.store
+    (i32.add
+      (local.get $frameptr)
+      (i32.const 4)) ;; *ip
+    (local.get $ip)))
+(func $get_slot
+  (param $frameptr i32)
+  (param $i i32)
+  (result f64)
+  (f64.load
+    (i32.add
       (i32.add
-        (local.get $cur)
-        (i32.const 1)))))
+        (local.get $frameptr)
+        (i32.const 8)) ;; *slot
+      (i32.mul
+        (local.get $i)
+        (i32.const 8)))))
+(func $set_slot
+  (param $frameptr i32)
+  (param $i i32)
+  (param $v f64)
+  (f64.store
+    (i32.add
+      (i32.add
+        (local.get $frameptr)
+        (i32.const 8)) ;; *slot
+      (i32.mul
+        (local.get $i)
+        (i32.const 8)))
+    (local.get $v)))
 (func $interpret
   (param $srcptr i32)
   (result i32)
   (local $function f64)
-  (local $chunk i32)
+  (local $frame i32)
   (local $code i32)
   (local $tmp f64)
   (local $offset i32)
   (local $result i32)
+  (global.set $call_frames
+    (call $alloc
+      (i32.const 192)))
   (local.set $function
     (call $compile
       (local.get $srcptr)))
   (call $init_stack)
   (call $push
     (local.get $function))
-  (local.set $chunk
-    (call $get_chunk
-      (local.get $function)))
+  (local.set $frame
+    (call $add_frame
+      (call $as_obj
+        (local.get $function))
+      (call $get_codeptr
+        (call $get_chunk
+          (local.get $function))
+        (i32.const 0))
+      (i32.add
+        (global.get $stack)
+        (i32.const 4))))
 ;;  (call $dissasemble
-;;    (local.get $chunk))
-  (block $out
+;;    (call $get_chunk
+;;      (local.get $function)))
+(block $out
     (loop $run
       (local.set $code
         (i32.load8_u
-          (call $get_codeptr
-            (local.get $chunk)
-            (global.get $ip))))
+          (call $get_ip
+            (local.get $frame))))
 ${indent(
   watSwitch(
     `;;wasm
@@ -77,7 +167,7 @@ ${indent(
         (call $push
           (call $get_value
             (call $read_byte
-              (local.get $chunk))))
+              (local.get $frame))))
         (br $break)`,
       ],
       [
@@ -114,9 +204,10 @@ ${indent(
         OP_CODES.OP_GET_LOCAL,
         `;;wasm
         (call $push
-          (call $stack_get
+          (call $get_slot
+            (local.get $frame)
             (call $read_byte
-              (local.get $chunk))))
+              (local.get $frame))))
         (br $break)`,
       ],
       [
@@ -126,7 +217,7 @@ ${indent(
           (call $table_get
             (call $get_value
               (call $read_byte
-                (local.get $chunk)))))
+                (local.get $frame)))))
         (br $break)`,
       ],
       [
@@ -135,16 +226,17 @@ ${indent(
         (call $table_set
           (call $get_value
             (call $read_byte
-              (local.get $chunk)))
+              (local.get $frame)))
           (call $pop))
         (br $break)`,
       ],
       [
         OP_CODES.OP_SET_LOCAL,
         `;;wasm
-        (call $stack_set
+        (call $set_slot
+          (local.get $frame)
           (call $read_byte
-            (local.get $chunk))
+            (local.get $frame))
           (call $peek))
         (br $break)`,
       ],
@@ -154,7 +246,7 @@ ${indent(
         (call $table_set ;; todo: check if not exists (new key)
           (call $get_value
             (call $read_byte
-              (local.get $chunk)))
+              (local.get $frame)))
           (call $peek))
         (br $break)`,
       ],
@@ -315,10 +407,12 @@ ${indent(
         `;;wasm
         (local.set $offset
           (call $read_short
-            (local.get $chunk)))
-        (global.set $ip
+            (local.get $frame)))
+        (call $set_ip
+          (local.get $frame)
           (i32.add
-            (global.get $ip)
+            (call $get_ip
+              (local.get $frame))
             (local.get $offset)))
         (br $break)`,
       ],
@@ -327,27 +421,31 @@ ${indent(
         `;;wasm
         (local.set $offset
           (call $read_short
-            (local.get $chunk)))
+            (local.get $frame)))
         (if
           (i32.eqz
             (call $as_bool
               (call $peek)))
           (then
-            (global.set $ip
+            (call $set_ip
+              (local.get $frame)
               (i32.add
-                (global.get $ip)
+                (call $get_ip
+                  (local.get $frame))
                 (local.get $offset)))))
-        (br $break)`,
+            (br $break)`,
       ],
       [
         OP_CODES.OP_LOOP,
         `;;wasm
         (local.set $offset
           (call $read_short
-            (local.get $chunk)))
-        (global.set $ip
+            (local.get $frame)))
+        (call $set_ip
+          (local.get $frame)
           (i32.sub
-            (global.get $ip)
+            (call $get_ip
+              (local.get $frame))
             (local.get $offset)))
         (br $break)`,
       ],
@@ -362,9 +460,11 @@ ${indent(
   ),
   6,
 )}
-      (global.set $ip
+      (call $set_ip
+        (local.get $frame)
         (i32.add
-          (global.get $ip)
+          (call $get_ip
+            (local.get $frame))
           (i32.const 1)))
       (br $run)
       (local.set $result

@@ -61,27 +61,4 @@ export default `;;wasm
     (local.get $this)
     (local.get $top_of_stack))
   (local.get $value))
-(func $stack_get
-  (param $i i32)
-  (result f64)
-  (f64.load
-    (i32.add
-      (i32.add
-        (global.get $stack)
-        (i32.const 4)) ;; *stack
-      (i32.mul
-        (local.get $i)
-        (i32.const 8)))))
-(func $stack_set
-  (param $i i32)
-  (param $v f64)
-  (f64.store
-    (i32.add
-      (i32.add
-        (global.get $stack)
-        (i32.const 4)) ;; *stack
-      (i32.mul
-        (local.get $i)
-        (i32.const 8)))
-    (local.get $v)))
 `;
