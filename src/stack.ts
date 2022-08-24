@@ -17,8 +17,7 @@ export default `;;wasm
       (local.get $this)
       (i32.const 4)))
   (global.set $stack
-    (local.get $this))
-)
+    (local.get $this)))
 (func $push
   (param $value f64)
   (local $this i32)
@@ -39,12 +38,10 @@ export default `;;wasm
 (func $peek
   (result f64)
   (local $this i32)
-  (local.set $this
-    (global.get $stack))
   (f64.load
     (i32.sub
       (i32.load
-        (local.get $this))
+        (global.get $stack))
       (i32.const 8)))) ;; 64 / 8
 (func $pop
   (result f64)
@@ -65,4 +62,27 @@ export default `;;wasm
     (local.get $this)
     (local.get $top_of_stack))
   (local.get $value))
+(func $stack_get
+  (param $i i32)
+  (result f64)
+  (f64.load
+    (i32.add
+      (i32.add
+        (global.get $stack)
+        (i32.const 8)) ;; *stack
+      (i32.mul
+        (local.get $i)
+        (i32.const 8)))))
+(func $stack_set
+  (param $i i32)
+  (param $v f64)
+  (f64.store
+    (i32.add
+      (i32.add
+        (global.get $stack)
+        (i32.const 8)) ;; *stack
+      (i32.mul
+        (local.get $i)
+        (i32.const 8)))
+    (local.get $v)))
 `;

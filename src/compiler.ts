@@ -200,6 +200,43 @@ ${indent(
     (call $copy_string
       (global.get $prev_start)
       (global.get $prev_len))))
+(func $resolve_local
+  (param $name i32)
+  (result i32)
+  (local $i i32)
+  (local $local i32)
+  (local.set $i
+    (i32.sub
+      (global.get $local_count)
+      (i32.const 1)))
+  (block $out
+    (loop $loop
+      (br_if $out
+        (i32.lt_s
+          (local.get $i)
+          (i32.const 0)))
+      (if
+        (local.tee $local
+          (i32.load
+            (i32.add
+              (global.get $locals)
+              (i32.mul
+                (global.get $local_count)
+                (i32.const 2))))) ;; *name
+        (then
+          (if
+            (call $str_cmp
+              (local.get $name)
+              (local.get $local))
+            (then
+              (return
+                (local.get $i))))))
+        (local.set $i
+          (i32.sub
+            (local.get $i)
+            (i32.const 1)))
+        (br $loop)))
+  (i32.const -1))
 (func $add_local
   (param $nameptr i32)
   (local $localptr i32)
@@ -210,12 +247,12 @@ ${indent(
         (global.get $local_count) ;; should check this is < 256
         (i32.const 2))))
   (i32.store
-    (local.get $localptr)
+    (local.get $localptr) ;; *name
     (local.get $nameptr))
   (i32.store
     (i32.add
       (local.get $localptr)
-      (i32.const 1))
+      (i32.const 1)) ;; depth
     (global.get $scope_depth))
   (global.set $local_count
     (i32.add
@@ -342,18 +379,40 @@ ${indent(
           (i32.const 2))))))
 (func $variable
   (local $arg i32)
+  (local $get_op i32)
+  (local $set_op i32)
   (local.set $arg
-    (call $identifier_constant))
+    (call $resolve_local
+      (call $as_obj
+        (call $copy_string
+          (global.get $prev_start)
+          (global.get $prev_len)))))
+  (if
+    (i32.ne
+      (local.get $arg)
+      (i32.const -1))
+    (then
+      (local.set $get_op
+        (global.get $OP_GET_LOCAL))
+      (local.set $set_op
+        (global.get $OP_SET_LOCAL)))
+    (else
+      (local.set $arg
+        (call $identifier_constant))
+      (local.set $get_op
+        (global.get $OP_GET_GLOBAL))
+      (local.set $set_op
+        (global.get $OP_SET_GLOBAL))))
   (if
     (call $match_token
       (global.get $TOKEN_EQUAL)) ;; todo: check precedence <= PREC_ASSIGNMENT
     (then
       (call $expression)
       (call $write_chunk
-        (global.get $OP_SET_GLOBAL)))
+        (local.get $set_op)))
     (else
       (call $write_chunk
-        (global.get $OP_GET_GLOBAL))))
+        (local.get $get_op))))
   (call $write_chunk
     (local.get $arg)))
 (func $grouping
@@ -478,7 +537,30 @@ ${indent(
   (global.set $scope_depth
     (i32.sub
       (global.get $scope_depth)
-      (i32.const 1))))
+      (i32.const 1)))
+  (block $out
+    (loop $pop_local
+      (br_if $out
+        (i32.or
+          (i32.eqz
+            (global.get $local_count))
+          (i32.eq
+            (i32.load
+              (i32.add
+                (i32.add
+                  (global.get $locals)
+                  (i32.mul
+                    (global.get $local_count)
+                    (i32.const 2)))
+                (i32.const 1))) ;; depth
+            (global.get $scope_depth))))
+      (call $write_chunk
+        (global.get $OP_POP))
+      (global.set $local_count
+        (i32.sub
+          (global.get $local_count)
+          (i32.const 1)))
+      (br $pop_local))))
 (func $compile
   (param $srcptr i32)
   (call $init_scanner

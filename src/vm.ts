@@ -61,6 +61,16 @@ ${indent(
       [OP_CODES.OP_POP]: `;;wasm
       (call $pop)
       (br $break)`,
+      [OP_CODES.OP_GET_LOCAL]: `;;wasm
+      (call $push
+        (call $stack_get
+          (i32.load8_u
+            (call $get_codeptr
+              (local.tee $ip
+                (i32.add
+                  (local.get $ip)
+                  (i32.const 1)))))))
+      (br $break)`,
       [OP_CODES.OP_GET_GLOBAL]: `;;wasm
       (call $push
         (call $table_get
@@ -82,6 +92,16 @@ ${indent(
                   (local.get $ip)
                   (i32.const 1))))))
         (call $pop))
+      (br $break)`,
+      [OP_CODES.OP_SET_LOCAL]: `;;wasm
+      (call $stack_set
+        (i32.load8_u
+          (call $get_codeptr
+            (local.tee $ip
+              (i32.add
+                (local.get $ip)
+                (i32.const 1)))))
+        (call $peek))
       (br $break)`,
       [OP_CODES.OP_SET_GLOBAL]: `;;wasm
       (call $table_set ;; todo: check if not exists (new key)
