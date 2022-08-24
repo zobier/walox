@@ -7,6 +7,7 @@ export enum OP_CODES {
   OP_MULTIPLY,
   OP_DIVIDE,
   OP_NEGATE,
+  OP_GROUP,
   OP_RETURN,
 }
 

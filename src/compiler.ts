@@ -122,6 +122,37 @@ ${Object.entries({
                 (global.get $start)
                 (global.get $len))))
           (br $run)))
+      (if
+        (i32.eq
+          (local.get $token)
+          (global.get $TOKEN_LEFT_PAREN))
+        (then
+          (call $pushop
+            (local.get $opstack)
+            (global.get $OP_GROUP))
+          (br $run)))
+      (if
+        (i32.eq
+          (local.get $token)
+          (global.get $TOKEN_RIGHT_PAREN))
+        (then
+          (loop $group
+            (if
+              (i32.and
+                (call $not_empty
+                  (local.get $opstack))
+                (i32.ne
+                  (call $peekop
+                    (local.get $opstack))
+                  (global.get $OP_GROUP)))
+              (then
+                (call $write_chunk
+                  (call $popop
+                    (local.get $opstack)))
+                (br $group))))
+          (call $popop ;; should assert group op
+            (local.get $opstack))
+          (br $run)))
       (block $switch_op
 ${Object.entries({
   '$TOKEN_MINUS': '$OP_SUBTRACT',
