@@ -4,6 +4,7 @@ import compiler from './compiler';
 import debug from './debug';
 import main from './main';
 import memory from './memory';
+import native from './native';
 import object from './object';
 import scanner from './scanner';
 import stack from './stack';
@@ -28,6 +29,7 @@ ${object}
 ${compiler}
 ${stack}
 ${table}
+${native}
 ${vm}
 ${main}
 `,

@@ -67,6 +67,9 @@ export const getUtil = (buffer: ArrayBuffer) => ({
   tokenError(expected: number, got: number) {
     console.log(`Token error: expected ${TOKENS[expected]} got ${TOKENS[got]}`);
   },
+  now() {
+    return Date.now();
+  },
 });
 
 export default `;;wasm
@@ -112,4 +115,7 @@ export default `;;wasm
 (import "util" "tokenError"
   (func $tokenError
     (param i32 i32)))
+(import "util" "now"
+  (func $now
+    (result f64)))
 `;

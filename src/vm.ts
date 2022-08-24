@@ -121,6 +121,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
         (i32.const 8)))
     (local.get $v)))
 (func $call_value
+  (param $frame i32)
   (param $callee f64)
   (param $arg_count i32)
   (result i32)
@@ -148,7 +149,15 @@ ${enumToGlobals(INTERPRET_RESULT)}
               (i32.const 1))
             (i32.const 8)))))
     (else
-      (i32.const 0))))
+      (if
+        (call $is_native
+          (local.get $callee))
+        (then
+          (call $push
+            (call $native
+              (call $get_native
+                (local.get $callee))))))
+      (local.get $frame))))
 (func $interpret
   (param $srcptr i32)
   (result i32)
@@ -170,6 +179,7 @@ ${enumToGlobals(INTERPRET_RESULT)}
     (local.get $function))
   (local.set $frame
     (call $call_value
+      (local.get $frame)
       (local.get $function)
       (i32.const 0)))
   (block $out
@@ -485,6 +495,7 @@ ${indent(
             (local.get $frame)))
         (local.set $frame
           (call $call_value
+            (local.get $frame)
             (call $peek
               (local.get $arg_count))
             (local.get $arg_count)))

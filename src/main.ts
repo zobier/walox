@@ -14,6 +14,7 @@ export default `;;wasm
   (call $init_value_array
     (i32.const 32))
   (call $init_table)
+  (call $init_native)
   (call $interpret
     (local.get $srcptr)))
 `;
